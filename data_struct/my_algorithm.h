@@ -138,7 +138,18 @@ namespace algs
     template <typename T, template <typename P> class Container>
     auto back_inserter (Container<T>& container) {
         return data_struct::BackInserterIterator<T, Container<T>> (container);
-    }    
+    }
+
+
+    template <typename Iter, typename = data_struct::EnableIfBidirectional<Iter>>
+    auto reverse_iters (Iter it1, Iter it2) {
+        using data_struct::ReverseIterator;
+
+        auto rbeg = ReverseIterator<Iter> (--it2);
+        auto rend = ReverseIterator<Iter> (--it1);
+
+        return make_pair (rbeg, rend);
+    }
 }
 
 #endif

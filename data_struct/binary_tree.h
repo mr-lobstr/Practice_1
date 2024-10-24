@@ -107,13 +107,13 @@ namespace data_struct
                    and ptr_node()->right == nullptr;
             }
 
+            bool is_end() const noexcept {
+                return ptrPtr == nullptr or ptr_node() == nullptr;
+            }
+
         private:
             Ptr& ptr_node() const noexcept {
                 return *ptrPtr;
-            }
-
-            bool is_end() const noexcept {
-                return ptrPtr == nullptr or ptr_node() == nullptr;
             }
     
         private:
@@ -146,12 +146,13 @@ namespace data_struct
                 if (top.is_leaf()) {
                     insert (it, *top);
                     stack.pop();
-                } else if (top.left() != end()) {
+                } else if (top.left().is_end()) {
+                    insert (it.right(), T{});
+                    stack.push (top.right());                    
+                } else {
+
                     insert (it.left(), T{});
                     stack.push (top.left());
-                } else {
-                    insert (it.right(), T{});
-                    stack.push (top.right());
                 }
             }
         }
@@ -177,13 +178,13 @@ namespace data_struct
             try {
                 clear();
             } catch (...) {
-                std::terminate();
+                // std::terminate();
             }
         };
 
 
         bool empty() const noexcept {
-            return ptrRoot == nullptr;
+            return root().is_end();
         }
 
         auto root() noexcept {
@@ -198,18 +199,6 @@ namespace data_struct
 
         auto root() const noexcept {
             return croot();
-        }
-
-        auto end() noexcept {
-            return BranchIt{};
-        }
-
-        auto cend() const noexcept {
-            return ConstBranchIt{};
-        }
-
-        auto end() const noexcept {
-            return cend();
         }
 
         template <typename... Ts>
@@ -254,6 +243,14 @@ namespace data_struct
             it.ptr_node() = nullptr;
         }
 
+        void add_subtree (ConstBranchIt it, ConstBranchIt subTreeRoot) {
+            if (not it.is_end()) throw std::runtime_error (
+                "данный узел не является конечным\n"
+            );
+
+            std::swap (it.ptr_node(), subTreeRoot.ptr_node());
+        }
+
         void clear() {
             if (empty())
                 return;
@@ -267,10 +264,10 @@ namespace data_struct
                 if (top.is_leaf()) {
                     erase_leaf (top);
                     stack.pop();
-                } else if (top.left() != end()) {
-                    stack.push (top.left());
-                } else {
+                } else if (top.left().is_end()) {
                     stack.push (top.right());
+                } else {
+                    stack.push (top.left());
                 }
             }
         }

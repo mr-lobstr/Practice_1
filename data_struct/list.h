@@ -204,7 +204,7 @@ namespace data_struct
             auto pHead = it.real();
             auto newNode = new Node {
                 Head {pHead->prev, pHead}
-              , std::forward<Ts> (params)...
+              , T (std::forward<Ts> (params)...)
             };
             newNode->bind();
             ++size_;

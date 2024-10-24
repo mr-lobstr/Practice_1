@@ -65,6 +65,10 @@ namespace data_struct
             return tmp;
         }
 
+        Iter real() const noexcept {
+            return iter;
+        }
+
     private:
         Iter iter{};
     };
