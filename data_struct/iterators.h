@@ -7,6 +7,7 @@
 #include "iterators/random_iterator.h"
 #include "iterators/back_inserter_irerator.h"
 #include "iterators/inserter_iterator.h"
+#include "iterators/reverse_iterator.h"
 
 namespace data_struct
 {

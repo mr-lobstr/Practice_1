@@ -1,3 +1,4 @@
+#include <filesystem>
 #include "file_manager.h"
 #include "table.h"
 
@@ -5,140 +6,158 @@ using namespace std;
 using namespace filesystem;
 using namespace data_struct;
 
+using TFM = TableFileManager;
 
-TableFileManager::TableFileManager (Table& table_, string const &path_)
+
+TFM::TableFileManager (Table& table_) noexcept
     : table (table_)
-    , pathDir (path_)
 {}
 
-void TableFileManager::set_path_directory (std::string const& path_) {
-    pathDir = path_;
-}
 
-template <typename... Ts>
-void read (ifstream& file, Ts&...inputs) {
-    (file >> ... >> inputs);
-}
+template <typename Stream, typename Process>
+void process_file (std::string const& fileName, std::ios::openmode mode, Process process) {
+    Stream file (fileName, mode);
 
-
-template <typename... Ts>
-void write (ofstream& file, Ts const&... outputs) {
-    (file << ... << outputs);
-}
-
-
-template <typename... Ts>
-void read_file (string const &fileName, Ts &...inputs) {
-    ifstream file (fileName);
-
-    if (not file.open()) throw std::runtime_error (
+    if (not file.is_open()) throw std::runtime_error (
         "не удалось открыть файл \"" + fileName + "\"\n"
     );
 
-    read (file, inputs...);
+    process (file);
     file.close();
 }
 
-
-template <typename Mode, typename... Ts>
-void write_file(string const &fileName, Mode mode, Ts const &...outputs) {
-    ofstream file (fileName, mode);
-
-    if (not file.open()) throw std::runtime_error (
-        "не удалось открыть файл \"" + fileName + "\"\n"
-    );
-
-    write (file, outputs...);
-    file.close();
+template <typename Read>
+void read_file (std::string const& fileName, Read rFunc) {
+    process_file<std::ifstream> (fileName, std::ios::in, rFunc);
 }
 
 
-bool TableFileManager::locked() const {
-    bool is_lock;
-    read_file (lock_file_name(), is_lock);
-    return is_lock;
+template <typename Rewrite>
+void rewrite_file (std::string const& fileName, Rewrite rwFunc) {
+    process_file<std::ofstream> (fileName, std::ios::trunc, rwFunc);
 }
 
 
-void TableFileManager::lock() const {
-    write_file (lock_file_name(), ios::trunc, 1);
+template <typename Add>
+void add_file (std::string const& fileName, Add addFunc) {
+    process_file<std::ofstream> (fileName, std::ios::app, addFunc);
 }
 
 
-void TableFileManager::unlock() const {
-    write_file (lock_file_name(), ios::trunc, 0);
+bool TFM::is_locked() const {
+    bool isLocked;
+    read_file (lock_file_name(), [&] (auto& fLock) {
+        fLock >> isLocked;
+    });
+    return isLocked;
 }
 
 
-size_t TableFileManager::get_prime_key() const {
+void TFM::lock() const {
+    rewrite_file (lock_file_name(), [] (auto& fLock) {
+        fLock << Table::lock;
+    });
+}
+
+
+void TFM::unlock() const {
+    rewrite_file (lock_file_name(), [] (auto& fLock) {
+        fLock << Table::unlock;
+    });
+}
+
+
+size_t TFM::get_prime_key() const {
     size_t prime_key;
-    read_file (pk_file_name(), prime_key);
+    read_file (pk_file_name(), [&] (auto& fPrimeKey) {
+        fPrimeKey >> prime_key;
+    });
     return prime_key;
 }
 
 
-void TableFileManager::set_prime_key (size_t pk) const {
-    write_file (pk_file_name(), ios::trunc, pk);
+void TFM::set_prime_key (size_t pk) const {
+    rewrite_file (pk_file_name(), [&] (auto& fPrimeKey) {
+        fPrimeKey << pk;
+    });
 }
 
 
-TableFileManager::Position TableFileManager::get_position() const {
-    size_t pageNumb, currLine;
-    read_file (pos_file_name(), pageNumb, currLine);
-    return {pageNumb, currLine};
+TFM::Position TFM::get_position() const {
+    size_t page, row;
+    read_file (position_file_name(), [&] (auto& fPos) {
+        fPos >> page >> row;
+    });
+    return {page, row};
 }
 
 
-void TableFileManager::set_position (size_t pageNumb, size_t line) const {
-    write_file (pos_file_name(), ios::trunc, pageNumb, " ", line);
+void TFM::set_position (size_t page, size_t row) const {
+    rewrite_file (position_file_name(), [&] (auto& fPos) {
+        fPos << page << " " << row;
+    });
 }
 
 
-string TableFileManager::page_file_name (size_t numb) const {
-    return pathDir + to_string (numb) + ".csv";
+string TFM::page_file_name (size_t numb) const {
+    return table.pathDir + to_string (numb) + ".csv";
 }
 
 
-void TableFileManager::create_files() const {
+
+string TFM::pk_file_name() const {
+    return table.pathDir + table.name + "_pk_sequence";
+}
+
+
+string TFM::lock_file_name() const {
+    return table.pathDir + table.name + "_lock";
+}
+
+
+string TFM::position_file_name() const {
+    return table.pathDir + table.name + "_current_page";
+}
+
+
+void TFM::create_files() const {
     creat_page (1);
     set_position (1, 0);
     set_prime_key (0);
-    unlock(); 
+    unlock();
 }
 
 
-string TableFileManager::pk_file_name() const {
-    return pathDir + table.name + "_pk_sequence";
+void TFM::creat_page (size_t numb) const {
+    rewrite_file (page_file_name (numb), [&] (auto& fPage) {
+        fPage << table.header() << "\n";
+    });
 }
 
 
-string TableFileManager::lock_file_name() const {
-    return pathDir + table.name + "_lock";
+void TFM::add_page (size_t numb, function<void(ofstream&)> addFunc) const {
+    add_file (page_file_name (numb), [&] (auto& fPage) {
+        addFunc (fPage);
+    });
 }
 
 
-string TableFileManager::pos_file_name() const {
-    return pathDir + table.name + "_current_page";
+void TFM::write_page (size_t numb, function<void(ofstream&)> wFunc) const {
+    creat_page (numb);
+
+    add_file (page_file_name (numb), [&] (auto& fPage) {
+        wFunc (fPage);
+    });
 }
 
 
-void TableFileManager::page_write_line (ofstream &page, DynamicArray<string> const &line) const {
-    bool is_first = true;
-    for (auto &el : line) {
-        page << (is_first ? "" : ",") << el;
-        is_first = false;
-    }
-    page << "\n";
+void TFM::read_page (size_t numb, function<void(ifstream&)> rFunc) const {
+    read_file (page_file_name (numb), [&] (auto& fPage) {
+        rFunc (fPage);
+    });
 }
 
 
-void TableFileManager::creat_page (size_t numb) const {
-    ofstream page (page_file_name (numb));
-    page_write_line (page, table.columns);
-    page.close();
-}
-
-
-void TableFileManager::delete_page (size_t numb) const {
+void TFM::delete_page (size_t numb) const {
     remove (page_file_name (numb));
 }

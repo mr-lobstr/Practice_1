@@ -2,36 +2,21 @@
 using namespace std;
 using namespace data_struct;
 
-
-List<string> split (string const& str, char separator) {
-    List<string> res;
-    auto subBeg = str.begin();
-    auto subEnd = str.begin();
-
-    while (subEnd != str.end()) {
-        subBeg = algs::find_if (subEnd, str.end(), [&] (char c) {
-            return c != separator;
-        });
-
-        if (subBeg == str.end())
-            break;
-
-        subEnd = algs::find (subBeg, str.end(), separator);
-        res.emplace_back (subBeg, subEnd);
-    }
-
-    return res;
+void throw_if (bool errorCondition, std::string const& errorMessage) {
+    if (errorCondition) throw std::runtime_error (
+        errorMessage
+    );
 }
 
-
-ConditionParser::ConditionParser (string const& str)
-    : words (split (str, ' '))
+ConditionParser::ConditionParser (string str_)
+    : str (std::move (str_))
+    , words (split_into_words (str))
 {}
 
 
 template <typename Check>
-string check_and_get_first (List<string>& words, Check check) {
-    string mess, first = words.front();
+string check_and_get_first (List<StringView>& words, Check check) {
+    StringView mess, first = words.front();
     bool condition;
 
     check (first, condition, mess);
@@ -49,7 +34,7 @@ bool ConditionParser::empty() const noexcept {
 
 
 Conditions ConditionParser::get_next_token() {
-    if (empty()) std::runtime_error (
+    throw_if (empty(), 
         "невозможно разобрать пустую строку\n"
     );
 
@@ -106,7 +91,7 @@ Conditions ConditionParser::get_condition() {
             it.to_right();
         }
 
-        if (isEqExpr and *tokenIt != "=") throw std::runtime_error (
+        throw_if (isEqExpr and *tokenIt != "=",
             "ожидалось выражение с =, а не " + *tokenIt + "\n"
         );
         
@@ -120,19 +105,19 @@ Conditions ConditionParser::get_condition() {
 }
 
 
-bool ConditionParser::is_eq (string const& word) const noexcept {
+bool ConditionParser::is_eq (StringView const& word) const noexcept {
     return word == "=";
 }
 
 
-bool ConditionParser::is_operator (string const& word) const noexcept {
+bool ConditionParser::is_operator (StringView const& word) const noexcept {
     return word == "OR"
         or word == "AND"
         or word == "=";
 }
 
 
-bool ConditionParser::is_operand (string const& word) const noexcept {
+bool ConditionParser::is_operand (StringView const& word) const noexcept {
     if (word.front() == '\'' and word.back() == '\'')
         return true;
 
@@ -140,7 +125,7 @@ bool ConditionParser::is_operand (string const& word) const noexcept {
     return it != word.end();
 }
 
-int ConditionParser::priority (string const& op) const noexcept {
+int ConditionParser::priority (StringView const& op) const noexcept {
     return op == "="   ? 3
          : op == "AND" ? 2
          : op == "OR"  ? 1

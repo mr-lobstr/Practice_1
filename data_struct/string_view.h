@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include <utility>
-#include "data_struct/list.h"
+#include "dynamic_array.h"
 
 class StringView {
 public:
@@ -17,7 +17,7 @@ public:
     StringView& operator= (StringView&&) noexcept;
 
     template <std::size_t N>
-    explicit StringView (char const (&)[N]) noexcept;
+    StringView (char const (&)[N]) noexcept;
 
     StringView (char const*, std::size_t) noexcept;
     StringView (std::string const&) noexcept;
@@ -47,9 +47,9 @@ bool operator!= (StringView const&, StringView const&) noexcept;
 
 std::ostream& operator<< (std::ostream&, StringView const&);
 
-data_struct::List<StringView> split (StringView const&, char);
-data_struct::List<StringView> split_into_words (StringView const&);
+data_struct::DynamicArray<StringView> split (StringView const&, char);
+data_struct::DynamicArray<StringView> split_into_words (StringView const&);
 
-std::string join_views (data_struct::List<StringView> const&);
+std::string join_views (data_struct::DynamicArray<StringView> const&);
 
 #endif

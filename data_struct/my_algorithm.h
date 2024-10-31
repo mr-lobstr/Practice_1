@@ -1,7 +1,7 @@
 #ifndef MY_ALGORITHM_H_GUARD
 #define MY_ALGORITHM_H_GUARD
 
-#include "iterators/reverse_iterator.h"
+#include "iterators.h"
 
 namespace algs
 {

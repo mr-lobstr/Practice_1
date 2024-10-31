@@ -1,5 +1,5 @@
 #include "string_view.h"
-#include "data_struct/my_algorithm.h"
+#include "my_algorithm.h"
 using namespace std;
 using namespace data_struct;
 
@@ -100,8 +100,8 @@ ostream& operator<< (ostream& out, StringView const& sv) {
 }
 
 
-List<StringView> split (StringView const& sv, char separator) {
-    List<StringView> views;
+DynamicArray<StringView> split (StringView const& sv, char separator) {
+    DynamicArray<StringView> views;
     auto subBeg = sv.begin();
 
     while (true) {
@@ -118,8 +118,8 @@ List<StringView> split (StringView const& sv, char separator) {
 }
 
 
-List<StringView> split_into_words (StringView const& sv) {
-    List<StringView> views;
+DynamicArray<StringView> split_into_words (StringView const& sv) {
+    DynamicArray<StringView> views;
     auto subBeg = sv.begin();
     auto subEnd = sv.begin();
 
@@ -139,7 +139,7 @@ List<StringView> split_into_words (StringView const& sv) {
 }
 
 
-string join_views (List<StringView> const& views) {   
+string join_views (DynamicArray<StringView> const& views) {   
     auto str = ""s;
 
     for (auto& view : views) {
