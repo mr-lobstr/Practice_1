@@ -6,74 +6,19 @@
 #include "iterators.h"
 #include "my_algorithm.h"
 
-namespace array_detail
-{
-    template <typename T, typename C>
-    struct IterImpl {
-        using Container = C;
-
-    public:
-        IterImpl() noexcept = default;
-        ~IterImpl() noexcept = default;
-        IterImpl (IterImpl const&) noexcept = default;
-        IterImpl& operator= (IterImpl const&) noexcept = default;
-
-        IterImpl (IterImpl&& rhs) noexcept
-            : ptr (std::exchange (rhs.ptr, nullptr))
-        {}
-
-        IterImpl& operator= (IterImpl&& rhs) noexcept {
-            ptr = std::exchange (rhs.ptr, nullptr);
-            return *this;
-        }
-
-        IterImpl (T* ptr_) noexcept
-            : ptr (ptr_)
-        {}
-
-    public:
-        T*& real() const noexcept {
-            return ptr;
-        }
-
-        bool equal (IterImpl const& rhs) const noexcept {
-            return ptr == rhs.ptr; 
-        }
-
-        auto diff (IterImpl const& rhs) const noexcept {
-            return ptr - rhs.ptr; 
-        }
-
-        void plus (std::ptrdiff_t n) noexcept {
-            ptr += n; 
-        }
-
-        void next() noexcept {
-            ++ptr; 
-        }
-
-        void prev() noexcept {
-            --ptr; 
-        }
-
-        T& get_value() const noexcept {
-            return *ptr; 
-        }
-
-    public:
-        mutable T* ptr{};
-    };
-}
 
 namespace data_struct
 {
     template <typename T>
     class DynamicArray {
-        using IterImpl = array_detail::IterImpl<T, DynamicArray>;
+        class IterImpl;
+        friend IterImpl;
 
     public:
-        using iterator       = RandomIterator<T, IterImpl, Mutable_tag>;
-        using const_iterator = RandomIterator<T, IterImpl, Const_tag>;
+        using value_type = T;
+
+        using iterator       = iter::RandomIterator<T, IterImpl, iter::Mutable_tag>;
+        using const_iterator = iter::RandomIterator<T, IterImpl, iter::Const_tag>;
 
     public:
         DynamicArray() noexcept = default;
@@ -84,23 +29,23 @@ namespace data_struct
             , end_ (std::exchange (rhs.end_, nullptr))
         {}
 
-        template <class Iter, class = EnableIfForward<Iter>>
+        template <class Iter, class = iter::EnableIfForward<Iter>>
         DynamicArray (Iter beg, Iter end)
             : DynamicArray ()
         {
-            algs::copy (beg, end, algs::back_inserter (*this));
+            algs::copy (beg, end, iter::back_inserter (*this));
         }
 
         DynamicArray (std::initializer_list<T> iList)
             : DynamicArray (iList.size(), InitTag{})
         {
-            algs::copy (iList.begin(), iList.end(), algs::back_inserter (*this));
+            algs::copy (iList.begin(), iList.end(), iter::back_inserter (*this));
         }
 
         DynamicArray (DynamicArray const& rhs)
             : DynamicArray (rhs.size(), InitTag{})
         {
-            algs::copy (rhs.begin(), rhs.end(), algs::back_inserter (*this));
+            algs::copy (rhs.begin(), rhs.end(), iter::back_inserter (*this));
         }
 
         DynamicArray (std::size_t count, T const& value = T())
@@ -113,7 +58,7 @@ namespace data_struct
 
         DynamicArray& operator= (DynamicArray&& rhs) noexcept {
             if (this != &rhs) {
-                auto tmp {std::move (rhs)};
+                auto tmp (std::move (rhs));
                 swap (tmp);
             }
             return *this;
@@ -121,7 +66,7 @@ namespace data_struct
 
         DynamicArray& operator= (DynamicArray const& rhs) {
             if (this != &rhs) {
-                auto tmp {rhs};
+                auto tmp (rhs);
                 swap (tmp);
             }
             return *this;
@@ -201,7 +146,8 @@ namespace data_struct
         template <typename... Ts>
         void emplace_back (Ts&&... args) {
             reserve_before_insert();
-            new(end_) T {std::forward<Ts> (args)...};
+
+            new(end_) T (std::forward<Ts> (args)...);
             ++end_;
         }
 
@@ -220,7 +166,7 @@ namespace data_struct
             auto saveIt = begin() + diff;
 
             algs::shift_right (saveIt, end());
-            new (saveIt.real()) T {std::forward<Ts> (args)...};
+            new (saveIt.ptr) T (std::forward<Ts> (args)...);
 
             return saveIt;
         }
@@ -239,8 +185,7 @@ namespace data_struct
         }
 
         void erase (const_iterator it) {
-            auto noConstIt = iterator (it.real());
-            algs::shift_left (noConstIt, end());
+            algs::shift_left (it.ptr, end().ptr);
             pop_back();
         }
 
@@ -269,7 +214,7 @@ namespace data_struct
         DynamicArray (iterator beg, iterator end, std::size_t memSize, MoveInitTag _)
             : DynamicArray (memSize, InitTag{})
         {
-            algs::move (beg, end, algs::back_inserter (*this));
+            algs::move (beg, end, iter::back_inserter (*this));
         }
 
         T* mem_alloc (std::size_t count) {
@@ -282,7 +227,7 @@ namespace data_struct
         }
 
         void mem_free (T* ptr) noexcept {
-            ::operator delete(ptr);
+            ::operator delete (ptr);
         }
 
         void realloc_if_capacity_less (std::size_t lowerBound, std::size_t newCapacity) {
@@ -319,6 +264,46 @@ namespace data_struct
     {
         lhs.swap(rhs);
     }
+
+
+    template <typename T>
+    class DynamicArray<T>::IterImpl
+        : PtrBox<T>
+    {
+        using PtrBox<T>::ptr;
+        friend DynamicArray;
+
+    public:
+        IterImpl (T* ptr_ = nullptr) noexcept
+               : PtrBox<T> (ptr_)
+        {}
+    
+    protected:
+        bool equal (IterImpl const& rhs) const noexcept {
+            return ptr == rhs.ptr; 
+        }
+
+        auto diff (IterImpl const& rhs) const noexcept {
+            return ptr - rhs.ptr; 
+        }
+
+        void plus (std::ptrdiff_t n) noexcept {
+            ptr += n; 
+        }
+
+        void next() noexcept {
+            ++ptr; 
+        }
+
+        void prev() noexcept {
+            --ptr; 
+        }
+
+        T& get_value() const noexcept {
+            return const_cast<T&> (*ptr); 
+        }
+    };
+
 }
 
 #endif

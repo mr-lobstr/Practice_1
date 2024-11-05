@@ -1,24 +1,27 @@
 #ifndef FORWARD_ITERATOR_TEMPLATE_H_GUARD
 #define FORWARD_ITERATOR_TEMPLATE_H_GUARD
 
-#include "iterators_general.h"
+#include "iterator_traits.h"
 
-namespace data_struct
+namespace iter
 {
     template <typename T, typename Impl, typename Mut>
-    class ForwardIterator
+    class ForwardIterator : public Impl
     {
         using Self = ForwardIterator;
         using Types = IterTraits<Self>;
 
-        template <typename Mut_>
-        using EnableIfMutable = std::enable_if_t<std::is_same_v<Mut_, Mutable_tag>>;
-
-        template <typename T1>
-        using EnableIfConvertible = std::enable_if_t<std::is_convertible_v<T1, Impl>>;
-
-        friend typename Impl::Container;
         friend ForwardIterator<T, Impl, Const_tag>;
+
+        template <typename Mut_>
+        using EnableIfMutable = std::enable_if_t<
+            std::is_same_v<Mut_, Mutable_tag>
+        >;
+
+        template <typename... Args>
+        using EnableIfImpl = std::enable_if_t<
+            IsConstructibleButNotBase_v <Impl, Args...>
+        >;
 
     public:
         using iterator_category = typename Types::Category;
@@ -30,25 +33,20 @@ namespace data_struct
 
     public:
         ForwardIterator() = default;
-        ~ForwardIterator() noexcept = default;
 
-        ForwardIterator (Impl impl_) 
-            : impl (impl_)
-        {}
-
-        template <typename T1, typename = EnableIfConvertible<T1>>
-        ForwardIterator (T1 t) 
-            : impl (t)
+        template <typename... Args, typename = EnableIfImpl<Args...>>
+        ForwardIterator (Args&&... args)
+            : Impl (std::forward<Args> (args)...)
         {}
 
         template <typename Mut_, typename = EnableIfMutable<Mut_>>
         ForwardIterator (ForwardIterator<T, Impl, Mut_> const& it)  
-            : impl (it.impl)
+            : Impl (it)
         {}
 
         friend
         bool operator== (Self const& lhs, Self const& rhs) {
-            return lhs.impl.equal (rhs.impl);
+            return lhs.equal (rhs);
         }
 
         friend
@@ -57,7 +55,7 @@ namespace data_struct
         }
 
         reference operator*() const {
-            return impl.get_value();
+            return Impl::get_value();
         }
 
         pointer operator->() const {
@@ -65,22 +63,15 @@ namespace data_struct
         }
 
         Self& operator++() {
-            impl.next();
+            Impl::next();
             return *this;
         }
 
         Self operator++ (int i) {
             auto tmp = *this;
-            impl.next();
+            Impl::next();
             return tmp;
         }
-
-        decltype(auto) real() const {
-            return impl.real();
-        }
-
-    protected:
-        Impl impl{};
     };
 
 

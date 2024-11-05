@@ -20,8 +20,8 @@ IteratorByRows::~IteratorByRows() noexcept
 
 IteratorByRows& IteratorByRows::operator= (IteratorByRows&& rhs) {
     if (this != &rhs) {
-        pimpl->~IterImpl();
-        pimpl = exchange (rhs.pimpl, nullptr);
+        reset();
+        swap (pimpl, rhs.pimpl);
     }
     return *this;
 }

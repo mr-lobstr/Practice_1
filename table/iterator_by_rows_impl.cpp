@@ -1,5 +1,5 @@
 #include <fstream>
-#include "data_struct/list.h"
+#include "../data_struct/list.h"
 #include "iterator_by_rows.h"
 #include "table.h"
 #include "table_state_guard.h"
@@ -48,7 +48,7 @@ public:
 
     void next() {
         ++currRowIt;
-        if (readRowsCnt % table.rowsLimit == 0) {
+        if (readRowsCnt % table.rows_limit() == 0) {
             current_page_upload();
             next_page_load();
         }
@@ -71,13 +71,13 @@ public:
     void erase()
     {   
         if (rowsDeleted == 0) {
-            stateGuard.set_position (currentPage - 1, table.rowsLimit);
+            stateGuard.set_position (currentPage - 1, table.rows_limit());
         }
 
         currRowIt = rows.erase (currRowIt);
         ++rowsDeleted;
 
-        if (rowsDeleted % table.rowsLimit == 0) {
+        if (rowsDeleted % table.rows_limit() == 0) {
             next_page_load();
         }
     }

@@ -1,5 +1,5 @@
-#ifndef MY_stackImplH_GUARD
-#define MY_stackImplH_GUARD
+#ifndef MY_STACK_H_GUARD
+#define MY_STACK_H_GUARD
 
 #include "dynamic_array.h"
 
@@ -8,6 +8,8 @@ namespace data_struct
     template <typename T>
     class Stack {
     public:
+        using value_type = typename DynamicArray<T>::value_type;
+        
         using iterator       = typename DynamicArray<T>::iterator;
         using const_iterator = typename DynamicArray<T>::const_iterator;
 

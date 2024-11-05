@@ -79,10 +79,7 @@ namespace algs
 
     template <typename Iter>
     void shift_right (Iter beg, Iter end) {
-        --end;
-        --beg;
-        auto rbeg = data_struct::ReverseIterator<Iter> (end);
-        auto rend = data_struct::ReverseIterator<Iter> (beg);
+        auto [rbeg, rend] = iter::reverse_iters_range (beg, end);
 
         shift_left (rbeg, rend);
     }
@@ -107,48 +104,6 @@ namespace algs
             ++beg;
         }
         return end;
-    }
-}
-
-
-namespace data_struct
-{
-    template <typename T, typename U>
-    struct Pair {
-        T first;
-        U second;
-    };
-}
-
-
-namespace algs
-{
-    template <typename T, typename U>
-    auto make_pair (T const& t, U const& u) {
-        return data_struct::Pair<T, U> {t, u};
-    }
-
-
-    template <typename T, template <typename P> class Container>
-    auto inserter (Container<T>& container, typename Container<T>::const_iterator it) {
-        return data_struct::InserterIterator<T, Container<T>> (container, it);
-    }
-
-
-    template <typename T, template <typename P> class Container>
-    auto back_inserter (Container<T>& container) {
-        return data_struct::BackInserterIterator<T, Container<T>> (container);
-    }
-
-
-    template <typename Iter, typename = data_struct::EnableIfBidirectional<Iter>>
-    auto reverse_iters (Iter it1, Iter it2) {
-        using data_struct::ReverseIterator;
-
-        auto rbeg = ReverseIterator<Iter> (--it2);
-        auto rend = ReverseIterator<Iter> (--it1);
-
-        return make_pair (rbeg, rend);
     }
 }
 

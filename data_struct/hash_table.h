@@ -2,125 +2,180 @@
 #define MY_HASH_TABLE_H_GUARD
 
 #include <stdexcept>
-#include "hash_set.h"
+#include "hash_container_base.h"
+#include "default_hesh.h"
+#include "iterators.h"
+
 
 namespace data_struct
 {
     template <typename Key, typename Value>
-    struct KeyValueHash {
-        size_t operator() (Pair<Key, Value> const& kv) const {
-            return Hasher<Key>{} (kv.first);
-        }
+    struct KeyValue {
+        KeyValue() = default;
+
+        template <
+            typename KEY
+          , typename = std::enable_if_t<
+                std::is_convertible_v<KEY, Key>
+            >
+          , typename... Args
+        >
+        KeyValue (KEY&& k, Args&&... args)
+            : key (std::forward<KEY> (k))
+            , value (std::forward<Args> (args)...)
+        {}
+
+        Key key{};
+        Value value{};
     };
 
-    template <typename Key, typename Value>
-    struct KeyValueEqual {
-        bool operator() (Pair<Key, Value> const& kv, Pair<Key, Value> const& kv2) const {
-            return kv.first == kv2.first;
-        }
-    };
 
-
-    template <
-        typename Key
-      , typename Value
-      , typename Hash = KeyValueHash<Key, Value>
-      , typename Eq = KeyValueEqual<Key, Value>
-    >
-    class HashTable {
-        using Elem = Pair<Key, Value>;
-        using Impl = HashSet<Elem, Hash, Eq>;
-        using Self = HashTable;
+    template <typename Key, typename Value, typename Hash = Hasher<Key>>
+    class HashTable
+        : private HashContainerBase<
+            KeyValue<Key, Value>
+          , Hash
+          , HashTable<Key, Value, Hash>
+        >
+    {
+        using KV = KeyValue<Key, Value>;
+        using Base = HashContainerBase<KV, Hash, HashTable>;
+        friend Base;
 
     public:
-        using iterator       = typename Impl::iterator;
-        using const_iterator = typename Impl::const_iterator;
+        using value_type = KV;
+
+        using typename Base::iterator;
+        using typename Base::const_iterator;
+    
+    public:
+        using Base::empty;
+        using Base::size;
+        using Base::begin;
+        using Base::cbegin;
+        using Base::end;
+        using Base::cend;
+    
+    private:
+        using Base::rehash_before_add;
+
+        using Base::hash;
+        using Base::buckets;
+        using Base::size_;
 
     public:
         HashTable() noexcept = default;
-        ~HashTable() noexcept = default;
 
-        HashTable(Self const&) = default;
-        HashTable(Self&&) noexcept = default;
+        template <class Iter, class = iter::EnableIfForward<Iter>>
+        HashTable (Iter beg, Iter end) {
+            algs::copy (beg, end, iter::add_iterator (*this));
+        }
 
-        Self& operator= (Self const&) = default;
-        Self& operator= (Self&&) noexcept = default;
-
-        HashTable (std::initializer_list<Elem> iList)
-            : impl (iList)
+        HashTable (std::initializer_list<KV> initList) 
+            : HashTable (initList.begin(), initList.end())
         {}
 
-        void swap (HashTable& rhs) noexcept {
-            impl.swap(rhs.impl);
+        template <
+            typename KEY
+          , typename = std::enable_if_t<
+                std::is_convertible_v<KEY, Key>
+            >
+          , typename... Args
+        >
+        iterator emplace_add (KEY&& key, Args&&... args) {
+            auto it = find (key);
+
+            if (it == end()) {
+                if (rehash_before_add()) {
+                    it = find (key);
+                }
+
+                it.bucketIt->emplace_after (
+                    it.prevElemIt
+                  , std::forward<KEY> (key)
+                  , std::forward<Args> (args)...
+                );
+            }
+            ++size_;
+
+            return it;
         }
 
-        bool empty() const noexcept {
-            return impl.empty();
+        iterator add (KV const& kv) {
+            return emplace_add (kv.key, kv.value);
         }
 
-        std::size_t size() const noexcept {
-            return impl.size();
-        }
-
-        auto cbegin() const noexcept {
-            return impl.cbegin();
-        }
-
-        auto begin() const noexcept {
-            return cbegin();
-        }
-
-        auto cend() const noexcept {
-            return impl.cend();
-        }
-
-        auto end() const noexcept {
-            return cend();
-        }
-
-        void add (Key const& key, Value const& value = Value{}) {
-            Elem el {key, value};
-            impl.add (el);
-        }
-
-        void erase (Key const& key) {
-            impl.erase (
-                Elem {key, Value{}}
+        iterator add (KV&& kv) {
+            return emplace_add (
+                std::move (kv.key)
+              , std::move (kv.value)
             );
         }
 
-        Value& operator[] (Key const& key) {
-            return get (key);
+        template <typename... Args>
+        iterator add (Key const& key, Args&&... args) {
+            return emplace_add (
+                key
+              , std::forward<Args> (args)...
+            );
+        }
+
+        void erase (Key const& key) noexcept {
+            if (auto it = find (key); it != end()) {
+                it.bucketIt->erase_after (it.prevElemIt);
+                --size_;
+            }
+        }
+
+        auto find (Key const& key) const noexcept {
+            if (buckets.empty())
+                return end();
+
+            const_iterator it;
+            it.bucketIt = find_bucket (key);
+            it.endIt = buckets.end();
+
+            it.prevElemIt = it.bucketIt->find_prev_if ([&] (auto& pair) {
+                return key == pair.key;
+            });
+
+            return it;
+        }
+
+        auto find (Key const& key) noexcept {
+            auto it = static_cast<HashTable const*> (this)->find (key);
+            return iterator (
+                it.bucketIt
+              , it.endIt
+              , it.prevElemIt
+            );
         }
 
         Value const& operator[] (Key const& key) const {
-            return get (key);
-        }
-
-        const_iterator find (Key const& key) const {
-            return impl.find (Elem {key, Value{}});
-        }
-
-    private:
-        Value& get (Key const& key) const {
             auto it = find (key);
 
             if (it == end()) throw std::runtime_error (
                 "не существует элемента с таким ключом\n"
             );
 
-            return const_cast<Value&> (it->second);
+            return it->value;
         }
 
+        Value& operator[] (Key const& key) {
+            auto const& cref = *this;
+            return const_cast<Value&> (cref[key]);            
+        }
+    
     private:
-        Impl impl{};
+        auto find_bucket (Key const& key) const noexcept {
+            std::size_t index = hash (key) % buckets.size();
+            return buckets.begin() + index;
+        }
+
+        auto find_element (KV const& kv) noexcept {
+            return find (kv.key);
+        }
     };
-
-
-    template <typename Key, typename Value, typename Hash>
-    void swap (HashTable<Key, Value, Hash>& lhs, HashTable<Key, Value, Hash>& rhs) noexcept {
-        lhs.swap (rhs);
-    }
 }
 
 #endif

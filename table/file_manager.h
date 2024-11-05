@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include <functional>
-#include "data_struct/my_algorithm.h"
+#include "../data_struct/my_algorithm.h"
 
 class Table;
 
@@ -38,10 +38,10 @@ public:
     void delete_page (std::size_t) const;
 
 private:
-    std::string page_file_name (std::size_t) const;
-    std::string pk_file_name() const;
-    std::string lock_file_name() const;
-    std::string position_file_name() const;
+    std::string page_file_path (std::size_t) const;
+    std::string pk_file_path() const;
+    std::string lock_file_path() const;
+    std::string position_file_path() const;
 
 private:
     friend class TableStateGuard;

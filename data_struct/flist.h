@@ -4,76 +4,23 @@
 #include <utility>
 #include "iterators.h"
 #include "my_algorithm.h"
-
-
-namespace flist_detail
-{
-    template <typename T, typename C>
-    struct IterImpl {
-        using Container = C;
-        using Head = typename C::Head;
-
-    public:
-        IterImpl() noexcept = default;
-        ~IterImpl() noexcept = default;
-        IterImpl (IterImpl const&) noexcept = default;
-        IterImpl& operator= (IterImpl const&) noexcept = default;
-
-        IterImpl (IterImpl&& rhs) noexcept
-            : pPrev (std::exchange (rhs.pPrev, nullptr))
-        {}
-
-        IterImpl& operator= (IterImpl&& rhs) noexcept {
-            pPrev = std::exchange (rhs.pPrev, nullptr);
-            return *this;
-        }
-
-        IterImpl (Head* pH) noexcept
-            : pPrev (pH)
-        {}
-
-    public:
-        Head* real() const noexcept {
-            return pPrev;
-        }
-
-        bool equal(IterImpl const& rhs) const noexcept {
-            return pPrev == rhs.pPrev;
-        }
-
-        void next() noexcept {
-            pPrev = pPrev->next;
-        }
-            
-        T& get_value() const noexcept {
-            return C::get_ptr_node (pPrev)->value;
-        }
-
-    public:
-        Head* pPrev = nullptr;
-    };
-}
-
+#include "my_utility.h"
 
 namespace data_struct
 {
     template <typename T>
     class FList {
-        struct Head {
-            Head* next = nullptr;
-        };
+        struct Head;
+        struct Node;
+        class IterImpl;
 
-        struct Node: public Head {
-            T value;
-        };
-
-        using IterImpl = flist_detail::IterImpl<T, FList>;
         friend IterImpl;
-        friend InserterIterator<T, FList>;
 
     public:
-        using iterator       = ForwardIterator<T, IterImpl, Mutable_tag>;
-        using const_iterator = ForwardIterator<T, IterImpl, Const_tag>;
+        using value_type = T;
+
+        using iterator       = iter::ForwardIterator<T, IterImpl, iter::Mutable_tag>;
+        using const_iterator = iter::ForwardIterator<T, IterImpl, iter::Const_tag>;
 
     public:
         FList() noexcept = default;
@@ -83,16 +30,16 @@ namespace data_struct
         {}
 
         FList (FList const& rhs) {
-            algs::copy (rhs.begin(), rhs.end(), algs::inserter (*this, prev_begin()));
+            algs::copy (rhs.begin(), rhs.end(), iter::inserter (*this, prev_begin()));
         }
 
-        template <class Iter, class = EnableIfForward<Iter>>
+        template <class Iter, class = iter::EnableIfForward<Iter>>
         FList (Iter beg, Iter end) {
-            algs::copy (beg, end, algs::inserter (*this, prev_begin()));
+            algs::copy (beg, end, iter::inserter (*this, prev_begin()));
         }
 
         FList (std::initializer_list<T> iList) {
-            algs::copy (iList.begin(), iList.end(), algs::inserter (*this, prev_begin()));
+            algs::copy (iList.begin(), iList.end(), iter::inserter (*this, prev_begin()));
         }
 
         FList (std::size_t count, T const& value = T()) {
@@ -136,8 +83,9 @@ namespace data_struct
         }
 
         auto prev_cbegin() const noexcept {
-            return const_iterator {no_const (&prevFirst)};
+            return const_iterator {no_const_head  (&prevFirst)};
         }
+        
         auto prev_begin() const noexcept {
             return prev_cbegin();
         }
@@ -155,11 +103,11 @@ namespace data_struct
         }
 
         auto end() noexcept {
-            return iterator {nullptr};
+            return iterator{};
         }
 
         auto cend() const noexcept {
-            return const_iterator {nullptr};
+            return const_iterator{};
         }
 
         auto end() const noexcept {
@@ -176,15 +124,14 @@ namespace data_struct
 
         template <typename... Ts>
         iterator emplace_after (const_iterator it, Ts&&... params) {
-            auto pPrev = it.real();
-            auto oldNext = pPrev->next;
+            auto oldNext = it.ptr->next;
 
-            pPrev->next = new Node {
+            it.ptr->next = new Node (
                 oldNext
               , std::forward<Ts> (params)...
-            };
+            );
 
-            return iterator {it.real()};
+            return iterator {it.ptr};
         }
 
         iterator insert_after (const_iterator it, T const& value) {
@@ -209,53 +156,19 @@ namespace data_struct
         }
 
         void erase_after (const_iterator it) noexcept {
-            auto pPrev = it.real();
-            auto oldFirst = get_ptr_node (pPrev->next);
-            pPrev->next = oldFirst->next;
+            auto oldNext = get_ptr_node (it.ptr->next);
+            it.ptr->next = oldNext->next;
 
-            delete (oldFirst);
+            delete (oldNext);
         }
 
         void pop_front() noexcept {
             erase_after (prev_begin());
         }
-        
-        template <typename Predicate>
-        iterator find_prev_if (Predicate pred) noexcept {
-            return find_previous_if (pred);
-        }
 
         template <typename Predicate>
-        const_iterator find_prev_if (Predicate pred) const noexcept {
-            return find_previous_if (pred);
-        }  
-
-        iterator find_prev (T const& value) noexcept {
-            return find_prev_if ([&] (auto& el) {
-                return value == el;
-            });
-        }
-
-        const_iterator find_prev (T const& value) const noexcept {
-            return find_prev_if ([&] (auto& el) {
-                return value == el;
-            });
-        }       
-
-    private:
-        static
-        Head* no_const (Head const* pHead) noexcept {
-            return const_cast<Head*> (pHead);
-        }
-
-        static
-        Node* get_ptr_node (Head* pHead) noexcept {
-            return static_cast<Node*> (pHead);
-        }
-
-        template <typename Predicate>
-        iterator find_previous_if (Predicate pred) const noexcept {
-            iterator it {no_const (&prevFirst)};
+        auto find_prev_if (Predicate pred) const noexcept {
+            auto it = prev_begin();
 
             while (next_iter(it) != end()) {
                 if (pred (*next_iter(it)))
@@ -266,13 +179,50 @@ namespace data_struct
             return it;
         }
 
-        // только для Inserter
-        iterator insert (const_iterator it, T const& value) {
-            return insert_after (it, value);
+        auto find_prev (T const& value) const noexcept {
+            return find_prev_if ([&] (auto& el) {
+                return value == el;
+            });
+        } 
+        
+        template <typename Predicate>
+        auto find_prev_if (Predicate pred) noexcept {
+            return iterator {
+                const_this().find_prev_if (pred).ptr
+            };
+        }   
+
+        auto find_prev (T const& value) noexcept {
+            return iterator {
+                const_this().find_prev (value).ptr
+            };
         }
 
-        iterator insert (const_iterator it, T&& value) {
-            return insert_after (it, std::move (value));
+        void insert_after_node (const_iterator prevPos, const_iterator prevNode) noexcept {
+            auto pNode = prevNode.ptr->next;
+            prevNode.ptr->next = pNode->next;
+
+            pNode->next = prevPos.ptr->next;
+            prevPos.ptr->next = pNode;
+        }
+
+        void push_front_node (const_iterator prevNode) noexcept {
+            insert_after_node (prev_begin(), prevNode);
+        }
+
+    private:
+        FList const& const_this() const noexcept {
+            return *this;
+        }
+
+        static
+        Head* no_const_head (Head const* pHead) noexcept {
+            return const_cast<Head*> (pHead);
+        }
+
+        static
+        Node* get_ptr_node (Head* pHead) noexcept {
+            return static_cast<Node*> (pHead);
         }
     
     private:
@@ -281,8 +231,93 @@ namespace data_struct
 
 
     template <typename T>
+    struct FList<T>::Head {
+        Head* next = nullptr;
+    };
+
+
+    template <typename T>
+    struct FList<T>::Node:
+        public Head
+    {
+        template <typename... Args>
+        Node (Head* pHead, Args&&... args)
+            : Head {pHead}
+            , value (std::forward<Args> (args)...)
+        {}
+
+        T value;
+    };
+
+    
+    template <typename T>
+    class FList<T>::IterImpl
+        : PtrBox<Head>
+    {
+        using PtrBox<Head>::ptr;
+        friend FList;
+
+    public:
+        IterImpl (Head* pHead = nullptr) noexcept
+               : PtrBox<Head> (pHead)
+        {}
+    
+    protected:
+        bool equal(IterImpl const& rhs) const noexcept {
+            return ptr == rhs.ptr;
+        }
+
+        void next() noexcept {
+            ptr = ptr->next;
+        }
+            
+        T& get_value() const noexcept {
+            return FList::get_ptr_node (ptr)->value;
+        }
+    };
+
+
+    template <typename T>
     void swap (FList<T>& lhs, FList<T>& rhs) noexcept {
         lhs.swap (rhs);
     }
 }
+
+
+namespace iter
+{
+    template <typename T>
+    struct InserterImpl<data_struct::FList<T>> {
+        using FList = data_struct::FList<T>;
+
+        using OutType = InserterImpl&;
+        using Value = typename FList::value_type;
+        using CIter = typename FList::const_iterator;
+
+    public:
+        InserterImpl (FList& flist_, CIter pos) noexcept
+            : flist (flist_)
+            , insertPos (pos)
+        {}
+
+        void operator= (Value const& value) {
+            insertPos = flist.insert_after (insertPos, value);
+            ++insertPos;
+        }
+
+        void operator= (Value&& value) {
+            insertPos = flist.insert_after (insertPos, std::move (value));
+            ++insertPos;
+        }
+
+        OutType operator*() noexcept {
+            return *this;
+        }
+
+    private:
+        FList& flist;
+        CIter insertPos{};
+    };
+}
+
 #endif

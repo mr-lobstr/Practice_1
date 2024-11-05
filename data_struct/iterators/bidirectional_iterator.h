@@ -3,16 +3,19 @@
 
 #include "forward_iterator.h"
 
-namespace data_struct
+namespace iter
 {
     template <typename T, typename Impl, typename Mut>
-    class BidirectionalIterator
+    class BidirectIterator
         : public ForwardIterator<T, Impl, Mut>
     {
         using Base = ForwardIterator<T, Impl, Mut>;
-        using Self = BidirectionalIterator;
+        using Self = BidirectIterator;
 
-        friend typename Impl::Container;
+        template <typename... Args>
+        using EnableIfImpl = std::enable_if_t<
+            IsConstructibleButNotBase_v <Impl, Args...>
+        >;
 
     public:
         using iterator_category = std::bidirectional_iterator_tag;
@@ -23,33 +26,31 @@ namespace data_struct
         using typename Base::pointer;
 
     public:
-        using Base::impl;
-
         using Base::operator*;
         using Base::operator->;
         using Base::operator++;
-        using Base::real;
 
     public:
-        BidirectionalIterator() = default;
+        BidirectIterator() = default;
 
-        BidirectionalIterator (Impl impl_) 
-            : Base (impl_)
+        template <typename... Args, typename = EnableIfImpl<Args...>>
+        BidirectIterator (Args&&... args)
+            : Base (std::forward<Args> (args)...)
         {}
 
         template <typename Mut_>
-        BidirectionalIterator (BidirectionalIterator<T, Impl, Mut_> const& it)  
-            : Base (it)
+        BidirectIterator (BidirectIterator<T, Impl, Mut_> const& it)  
+            : Base ((Base const&) it)
         {}
 
         Self& operator--() {
-            impl.prev();
+            Impl::prev();
             return *this;
         }
 
         Self operator-- (int i) {
             auto tmp = *this;
-            impl.prev();
+            Impl::prev();
             return tmp;
         }
     };

@@ -1,25 +1,16 @@
 #include "table.h"
+#include "../database.h"
 #include "table_state_guard.h"
-#include "data_struct/string_view.h"
+#include "../data_struct/string_view.h"
 
 using namespace std;
 using namespace data_struct;
 
-Table::Table (string const& name_)
+Table::Table (string const& name_, Database const& db)
     : name (name_)
     , fm (*this)
+    , database (db)
 {}
-
-Table& Table::set_path (std::string const& path_) {
-    pathDir = path_;
-    return *this;
-}
-
-
-Table& Table::set_limit (std::size_t limit) {
-    rowsLimit = limit;
-    return *this;
-}
 
 
 void Table::create_files() const {
@@ -81,3 +72,13 @@ string Table::header() const {
 void Table::erase (Iterator& it) {
     it.erase();
 } 
+
+
+size_t Table::rows_limit() const noexcept {
+    return database.rowsLimit;
+}
+    
+    
+string Table::path_dir() const {
+    return database.pathDir + name;
+}

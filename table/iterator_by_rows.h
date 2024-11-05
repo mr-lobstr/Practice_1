@@ -3,8 +3,8 @@
 
 #include <string>
 #include <cstdint>
-#include "data_struct/string_view.h"
-#include "data_struct/list.h"
+#include "../data_struct/string_view.h"
+#include "../data_struct/list.h"
 
 class IteratorByRows {
     using Self = IteratorByRows;
@@ -33,8 +33,6 @@ public:
     std::string const& operator*() const noexcept;
 
     Self& operator++();
-
-private:
     void erase();
 
 private:

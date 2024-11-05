@@ -36,7 +36,7 @@ TSG::~TableStateGuard() {
 void TSG::update() {
     if (recording) {
         if (row == 1) {
-            row = table.rowsLimit;
+            row = table.rows_limit();
             --page;
         } else {
             --row;
@@ -73,7 +73,7 @@ void TSG::recording_start() noexcept {
 
     ++primeKey;
 
-    if (row == table.rowsLimit) {
+    if (row == table.rows_limit()) {
         row = 1;
         table.fm.creat_page (++page);
     } else {

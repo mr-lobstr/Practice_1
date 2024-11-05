@@ -1,26 +1,26 @@
-#ifndef BACK_INSERTER_ITERATOR_TEMPLATE_H_GUARD
-#define BACK_INSERTER_ITERATOR_TEMPLATE_H_GUARD
+#ifndef ADD_ITERATOR_TEMPLATE_H_GUARD
+#define ADD_ITERATOR_TEMPLATE_H_GUARD
 
 #include "output_iterator.h"
 
 namespace iter
 {
     template <typename Container>
-    struct BackInserterImpl {
-        using OutType = BackInserterImpl&;
+    struct AddIteratorImpl {
+        using OutType = AddIteratorImpl&;
         using Value = typename Container::value_type;
 
     public:
-        BackInserterImpl (Container& container_) noexcept
+        AddIteratorImpl (Container& container_) noexcept
             : container (container_)
         {}
 
         void operator= (Value const& value) {
-            container.push_back (value);
+            container.add (value);
         }
 
         void operator= (Value&& value) {
-            container.push_back (std::move (value));
+            container.add (std::move (value));
         }
 
         OutType operator*() noexcept {
@@ -33,8 +33,8 @@ namespace iter
 
 
     template <typename Container>
-    auto back_inserter (Container& container) {
-        using Impl = BackInserterImpl<Container>;
+    auto add_iterator (Container& container) {
+        using Impl = AddIteratorImpl<Container>;
         return OutputIterator<Impl> (container);
     }
 }

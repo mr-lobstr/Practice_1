@@ -4,93 +4,23 @@
 #include <utility>
 #include "iterators.h"
 #include "my_algorithm.h"
-
-
-namespace list_detail
-{
-    template <typename T, typename C>
-    struct IterImpl {
-        using Container = C;
-        using Head = typename C::Head;
-
-    public:
-        IterImpl() noexcept = default;
-        ~IterImpl() noexcept = default;
-        IterImpl (IterImpl const&) noexcept = default;
-        IterImpl& operator= (IterImpl const&) noexcept = default;
-
-        IterImpl (IterImpl&& rhs) noexcept
-            : pHead (std::exchange (rhs.pHead, nullptr))
-        {}
-
-        IterImpl& operator= (IterImpl&& rhs) noexcept {
-            pHead = std::exchange (rhs.pHead, nullptr);
-            return *this;
-        }
-
-        IterImpl (Head* pH) noexcept
-            : pHead (pH)
-        {}
-
-    public:
-        Head* real() const noexcept {
-            return pHead;
-        }
-
-        bool equal(IterImpl const& rhs) const noexcept {
-            return pHead == rhs.pHead;
-        }
-
-        void next() noexcept {
-            pHead = pHead->next;
-        }
-
-        void prev() noexcept {
-            pHead = pHead->prev;
-        }
-            
-        T& get_value() const noexcept {
-            return C::get_ptr_node (pHead)->value;
-        }
-
-    public:
-        Head* pHead = nullptr;
-    };
-}
-
+#include "my_utility.h"
 
 namespace data_struct
 {
     template <typename T>
     class List {
-        struct Head {
-            void bind() noexcept {
-                next->prev = prev->next = this;
-            }
+        struct Head;
+        struct Node;
+        class IterImpl;
 
-            void rebind() noexcept {
-                prev->next = next;
-                next->prev = prev;
-            }
-
-            void reset() noexcept {
-                prev = next = this;
-            }
-
-            Head* prev = this;
-            Head* next = this;
-        };
-
-        struct Node: public Head {
-            T value;
-        };
-
-        using IterImpl = list_detail::IterImpl<T, List>;
         friend IterImpl;
 
     public:
-        using iterator       = BidirectionalIterator<T, IterImpl, Mutable_tag>;
-        using const_iterator = BidirectionalIterator<T, IterImpl, Const_tag>;
+        using value_type = T;
+
+        using iterator       = iter::BidirectIterator<T, IterImpl, iter::Mutable_tag>;
+        using const_iterator = iter::BidirectIterator<T, IterImpl, iter::Const_tag>;
     
     public:
         List() noexcept = default;
@@ -105,16 +35,16 @@ namespace data_struct
         }
 
         List (List const& rhs) {
-            algs::copy (rhs.begin(), rhs.end(), algs::back_inserter (*this));
+            algs::copy (rhs.begin(), rhs.end(), iter::back_inserter (*this));
         }
 
-        template <class Iter, class = EnableIfForward<Iter>>
+        template <class Iter, class = iter::EnableIfForward<Iter>>
         List (Iter beg, Iter end) {
-            algs::copy (beg, end, algs::back_inserter (*this));
+            algs::copy (beg, end, iter::back_inserter (*this));
         }
 
         List (std::initializer_list<T> iList) {
-            algs::copy (iList.begin(), iList.end(), algs::back_inserter (*this));
+            algs::copy (iList.begin(), iList.end(), iter::back_inserter (*this));
         }
 
         List (std::size_t count, T const& value = T()) {
@@ -201,15 +131,16 @@ namespace data_struct
 
         template <typename... Ts>
         iterator emplace (const_iterator it, Ts&&... params) {
-            auto pHead = it.real();
-            auto newNode = new Node {
-                Head {pHead->prev, pHead}
-              , T (std::forward<Ts> (params)...)
-            };
+            auto newNode = new Node (
+                it.ptr->prev
+              , it.ptr
+              , std::forward<Ts> (params)...
+            );
+
             newNode->bind();
             ++size_;
 
-            return iterator {it.real()->prev};
+            return iterator {it.ptr->prev};
         }
 
         iterator insert (const_iterator it, T&& value) {
@@ -247,14 +178,13 @@ namespace data_struct
         }
 
         iterator erase (const_iterator it) noexcept {            
-            auto pHead = it.real();
-            auto pNext = pHead->next;
+            auto next = it.ptr->next;
 
             --size_;
-            pHead->rebind();
-            delete (get_ptr_node (pHead));
+            it.ptr->rebind();
+            delete (get_ptr_node (it.ptr));
 
-            return iterator {pNext};
+            return iterator {next};
         }
 
         iterator erase (const_iterator beg, const_iterator end) noexcept {
@@ -262,7 +192,7 @@ namespace data_struct
                 beg = erase(beg);
             }
             
-            return iterator {beg.real()};
+            return iterator {beg.ptr};
         }
 
         void pop_front() noexcept {
@@ -292,6 +222,71 @@ namespace data_struct
     private:
         Head endHead{};
         std::size_t size_ = 0;
+    };
+
+
+    template <typename T>
+    struct List<T>::Head {
+        void bind() noexcept {
+            next->prev = prev->next = this;
+        }
+
+        void rebind() noexcept {
+            prev->next = next;
+            next->prev = prev;
+        }
+
+        void reset() noexcept {
+            prev = next = this;
+        }
+
+        Head* prev = this;
+        Head* next = this;
+    };
+
+
+    template <typename T>
+    struct List<T>::Node:
+        public Head
+    {
+        template <typename... Args>
+        Node (Head* pPrev, Head* pNext, Args&&... args)
+            : Head {pPrev, pNext}
+            , value (std::forward<Args> (args)...)
+        {}
+
+        T value;
+    };
+
+
+    template <typename T>
+    class List<T>::IterImpl
+        : PtrBox<Head>
+    {
+        using PtrBox<Head>::ptr;
+        friend List;
+
+    public:
+        IterImpl (Head* pHead = nullptr) noexcept
+               : PtrBox<Head> (pHead)
+        {}
+    
+    protected:
+        bool equal(IterImpl const& rhs) const noexcept {
+            return ptr == rhs.ptr;
+        }
+
+        void next() noexcept {
+            ptr = ptr->next;
+        }
+
+        void prev() noexcept {
+            ptr = ptr->prev;
+        }
+            
+        T& get_value() const noexcept {
+            return List::get_ptr_node (ptr)->value;
+        }
     };
 
 

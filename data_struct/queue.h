@@ -8,6 +8,8 @@ namespace data_struct
     template <typename T>
     class Queue {
     public:
+        using value_type = typename List<T>::value_type;
+
         using iterator       = typename List<T>::iterator;
         using const_iterator = typename List<T>::const_iterator;
 

@@ -3,16 +3,19 @@
 
 #include "bidirectional_iterator.h"
 
-namespace data_struct
+namespace iter
 {
     template <typename T, typename Impl, typename Mut>
     class RandomIterator
-        : public BidirectionalIterator<T, Impl, Mut>
+        : public BidirectIterator<T, Impl, Mut>
     {
-        using Base = BidirectionalIterator<T, Impl, Mut>;
+        using Base = BidirectIterator<T, Impl, Mut>;
         using Self = RandomIterator;
 
-        friend typename Impl::Container;
+        template <typename... Args>
+        using EnableIfImpl = std::enable_if_t<
+            IsConstructibleButNotBase_v <Impl, Args...>
+        >;
 
     public:
         using iterator_category = std::random_access_iterator_tag;
@@ -23,29 +26,27 @@ namespace data_struct
         using typename Base::pointer;
 
     public:
-        using Base::impl;
-
         using Base::operator*;
         using Base::operator->;
         using Base::operator++;
         using Base::operator--;
-        using Base::real;
 
     public:
         RandomIterator() = default;
 
-        RandomIterator (Impl impl_) 
-            : Base (impl_)
+        template <typename... Args, typename = EnableIfImpl<Args...>>
+        RandomIterator (Args&&... args)
+            : Base (std::forward<Args> (args)...)
         {}
 
         template <typename Mut_>
         RandomIterator (RandomIterator<T, Impl, Mut_> const& it)  
-            : Base (it)
+            : Base ((Base const&) it)
         {}
 
         friend
         difference_type operator- (Self const& lhs, Self const& rhs) {
-            return lhs.impl.diff (rhs.impl);
+            return lhs.diff (rhs);
         }
 
         friend
@@ -69,12 +70,12 @@ namespace data_struct
         }
 
         Self& operator+= (difference_type n) {
-            impl.plus (n);
+            Impl::plus (n);
             return *this;
         }
 
         Self& operator-= (difference_type n) {
-            impl.plus (-n);
+            Impl::plus (-n);
             return *this;
         }
 
