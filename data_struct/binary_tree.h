@@ -25,16 +25,16 @@ namespace data_struct
             using Self = BranchIterator;
             using Ptr = Node*;
             using ReturnType = std::conditional_t<
-                std::is_same_v<Mut, Mutable_tag>
+                std::is_same_v<Mut, iter::Mutable_tag>
               , T
               , T const
             >;
 
             template <typename Mut_>
-            using EnableIfMutable = std::enable_if_t<std::is_same_v<Mut_, Mutable_tag>>;
+            using EnableIfMutable = std::enable_if_t<std::is_same_v<Mut_, iter::Mutable_tag>>;
 
             friend BinTree;
-            friend BranchIterator<Const_tag>;
+            friend BranchIterator<iter::Const_tag>;
        
         public:
             BranchIterator() noexcept = default;
@@ -121,8 +121,8 @@ namespace data_struct
         };
     
     public:
-        using BranchIt = BranchIterator<Mutable_tag>;
-        using ConstBranchIt = BranchIterator<Const_tag>;
+        using BranchIt = BranchIterator<iter::Mutable_tag>;
+        using ConstBranchIt = BranchIterator<iter::Const_tag>;
     
     public:
         BinTree() noexcept = default;
@@ -144,14 +144,13 @@ namespace data_struct
                 auto& top = stack.top();
 
                 if (top.is_leaf()) {
-                    insert (it, *top);
+                    insert (Tilt::to_left, it, *top);
                     stack.pop();
                 } else if (top.left().is_end()) {
-                    insert (it.right(), T{});
+                    insert (Tilt::to_left, it.right(), T{});
                     stack.push (top.right());                    
                 } else {
-
-                    insert (it.left(), T{});
+                    insert (Tilt::to_left, it.left(), T{});
                     stack.push (top.left());
                 }
             }

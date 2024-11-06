@@ -16,13 +16,10 @@ public:
     StringView (StringView&&) noexcept;
     StringView& operator= (StringView&&) noexcept;
 
-    template <std::size_t N>
-    StringView (char const (&)[N]) noexcept;
-
     StringView (char const*, std::size_t) noexcept;
     StringView (std::string const&) noexcept;
 
-    explicit operator std::string() const;
+    operator std::string() const;
 
     char const* begin() const noexcept;
     char const* end() const noexcept;
@@ -34,6 +31,9 @@ public:
 
     char const& front() const noexcept;
     char const& back() const noexcept;
+
+    void shorten_left (std::size_t) noexcept;
+    void shorten_right (std::size_t) noexcept;
 
 private:
     char const* begView = nullptr;

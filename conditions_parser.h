@@ -23,14 +23,14 @@ private:
     Conditions get_next_token();
 
 
-    bool is_eq (StringView const&) const noexcept;
-    bool is_operator (StringView const&) const noexcept;
-    bool is_operand (StringView const&) const noexcept;
-    int priority (StringView const&) const noexcept;
+    bool is_eq (std::string const&) const noexcept;
+    bool is_operator (std::string const&) const noexcept;
+    bool is_operand (std::string const&) const noexcept;
+    int priority (std::string const&) const noexcept;
 
 private:
     std::string str;
-    data_struct::List<StringView> words;
+    data_struct::DynamicArray<std::string> words;
 };
 
 #endif

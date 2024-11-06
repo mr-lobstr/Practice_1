@@ -4,16 +4,14 @@
 #include "file_manager.h"
 #include "iterator_by_rows.h"
 #include "../data_struct/hash_table.h"
+namespace ds = data_struct;
 
 class Database;
 
 class Table {
-    friend class TableStateGuard;
-
-    using Columns = data_struct::HashTable<std::string, std::size_t>;
-
     friend TableFileManager;
     friend IteratorByRows;
+    friend class TableStateGuard;
 
 public:
     using Iterator = IteratorByRows;
@@ -38,12 +36,16 @@ public:
         return *this;
     }
 
+    void check_column (std::string const&);
+
     void create_files() const;
 
     Iterator begin() const;
     Iterator end() const;
 
-    void insert_back (std::string const&);
+    using Row = ds::DynamicArray<StringView>;
+
+    void insert_back (Row const&);
     void erase (Iterator&);
 
 private:
@@ -53,8 +55,8 @@ private:
 
 private:
     std::string name{};
-    Columns columns{};
     TableFileManager fm;
+    ds::HashTable<std::string, std::size_t> columns{};
 
     Database const& database;
 };

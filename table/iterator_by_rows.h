@@ -16,9 +16,10 @@ class IteratorByRows {
 public:
     IteratorByRows() noexcept = default;
     explicit IteratorByRows (Table const&);
-    IteratorByRows (Self&&);
-    Self& operator= (Self&&);
-    ~IteratorByRows();   
+    IteratorByRows (Self&&) noexcept;
+    ~IteratorByRows() noexcept;
+
+    Self& operator= (Self&&) noexcept;
 
     Self& operator= (Self const&) = delete;
     IteratorByRows (Self const&) = delete;
@@ -33,7 +34,7 @@ public:
     std::string const& operator*() const noexcept;
 
     Self& operator++();
-    void erase();
+    void erase() const;
 
 private:
     struct IterImpl;

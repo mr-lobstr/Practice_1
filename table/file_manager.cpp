@@ -145,10 +145,14 @@ string TFM::position_file_path() const {
 
 
 void TFM::create_files() const {
-    create_directory (table.path_dir());
-    creat_page (1);
-    set_position (1, 0);
-    set_prime_key (0);
+    bool isNewDir = create_directory (table.path_dir());
+
+    if (isNewDir) {
+        creat_page (1);
+        set_position (1, 0);
+        set_prime_key (0);
+    }
+
     unlock();
 }
 

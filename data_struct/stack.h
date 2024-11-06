@@ -47,6 +47,10 @@ namespace data_struct
             return stackImpl.back();
         }
 
+        T& top() noexcept {
+            return stackImpl.back();
+        }
+
         void pop() noexcept {
             stackImpl.pop_back();
         }

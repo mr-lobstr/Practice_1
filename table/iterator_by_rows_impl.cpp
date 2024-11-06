@@ -20,8 +20,14 @@ public:
         , pagesCnt (stateGuard.current_page())
     {
         auto minNumb = min(pagesCnt, maxPageCnt);
+
         while (pagesLoaded < minNumb) {
-            next_page_load();
+            try{
+                next_page_load();
+            } catch (runtime_error const& re) {
+                cerr << "ошибка при чтении страницы " << pagesLoaded << ":\n";
+                throw;
+            }
         }
 
         currRowIt = rows.begin();

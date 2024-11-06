@@ -13,6 +13,15 @@ Table::Table (string const& name_, Database const& db)
 {}
 
 
+void Table::check_column (std::string const& columnName) {
+    try {
+        columns[columnName];
+    } catch (invalid_argument const& e) {
+        cerr << " " << columnName << ": ";
+    }
+}
+
+
 void Table::create_files() const {
     fm.create_files();
 }
@@ -28,15 +37,14 @@ Table::Iterator Table::end() const {
 }
 
 
-void Table::insert_back (string const& str) {
+void Table::insert_back (Row const& row) {
     TableStateGuard stateGuard (*this);
-    auto words = split_into_words (str);
 
-    if (columns.size() != words.size()) {
+    if (columns.size() != row.size()) {
         auto expected = to_string (columns.size());
-        auto recieved = to_string (words.size());
+        auto recieved = to_string (row.size());
 
-        throw std::runtime_error (
+        throw std::invalid_argument (
             "ожидалось " + expected + " аргументов, получено " + recieved + "\n"
         );
     }
@@ -45,7 +53,7 @@ void Table::insert_back (string const& str) {
     
     fm.add_page (stateGuard.current_page(), [&] (auto& fPage) {
         fPage << stateGuard.current_pk() << ","
-              << join_views (words) << "\n";
+              << join_views (row) << "\n";
     });
 
     stateGuard.recording_finish();

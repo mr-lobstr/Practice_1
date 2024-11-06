@@ -10,20 +10,24 @@ void throw_if (bool errorCondition, std::string const& errorMessage) {
 
 ConditionParser::ConditionParser (string str_)
     : str (std::move (str_))
-    , words (split_into_words (str))
-{}
+{
+    auto jj = split_into_words (str);
+    for (auto sv : jj) {
+        words.push_back (sv);
+    }
+}
 
 
 template <typename Check>
-string check_and_get_first (List<StringView>& words, Check check) {
-    StringView mess, first = words.front();
+string check_and_get_first (DynamicArray<string>& words, Check check) {
+    string mess, first = words.front();
     bool condition;
 
     check (first, condition, mess);
     if (not condition)
         throw std::runtime_error (mess);
 
-    words.pop_front();
+    words.erase (words.begin());
     return first;
 }
 
@@ -44,7 +48,7 @@ Conditions ConditionParser::get_next_token() {
                 
             mess = is_eq(f)
                  ? "слева от = требуется \'строка\' либо таблица.колонка\n"
-                 : "\"" + f + "\" не является ни операндом, ни оператором\n";
+                 : "\"" + (string) f + "\" не является ни операндом, ни оператором\n";
         }
     );
 
@@ -105,19 +109,19 @@ Conditions ConditionParser::get_condition() {
 }
 
 
-bool ConditionParser::is_eq (StringView const& word) const noexcept {
+bool ConditionParser::is_eq (string const& word) const noexcept {
     return word == "=";
 }
 
 
-bool ConditionParser::is_operator (StringView const& word) const noexcept {
+bool ConditionParser::is_operator (string const& word) const noexcept {
     return word == "OR"
         or word == "AND"
         or word == "=";
 }
 
 
-bool ConditionParser::is_operand (StringView const& word) const noexcept {
+bool ConditionParser::is_operand (string const& word) const noexcept {
     if (word.front() == '\'' and word.back() == '\'')
         return true;
 
@@ -125,7 +129,7 @@ bool ConditionParser::is_operand (StringView const& word) const noexcept {
     return it != word.end();
 }
 
-int ConditionParser::priority (StringView const& op) const noexcept {
+int ConditionParser::priority (string const& op) const noexcept {
     return op == "="   ? 3
          : op == "AND" ? 2
          : op == "OR"  ? 1

@@ -12,11 +12,18 @@ TSG::TableStateGuard (Table const& table_)
     if (table.fm.is_locked()) {
         throw runtime_error ("уже происходит чтение/запись\n");
     }
-    table.fm.lock();
+    
+    try {
+        table.fm.lock();
+        primeKey = table.fm.get_prime_key();
+        auto pos = table.fm.get_position();
 
-    primeKey = table.fm.get_prime_key();
-    page = table.fm.get_position().first;
-    row = table.fm.get_position().second;
+        page = pos.first;
+        row = pos.second;
+    } catch (...) {
+        table.fm.unlock();
+        throw;
+    }
 }
 
 
@@ -28,7 +35,7 @@ TSG::~TableStateGuard() {
         update();
     } catch (std::runtime_error const& e) {
         std::cerr << e.what();
-        throw;
+        std::terminate();
     }
 }
 

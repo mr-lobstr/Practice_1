@@ -154,7 +154,7 @@ namespace data_struct
         Value const& operator[] (Key const& key) const {
             auto it = find (key);
 
-            if (it == end()) throw std::runtime_error (
+            if (it == end()) throw std::invalid_argument (
                 "не существует элемента с таким ключом\n"
             );
 

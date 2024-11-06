@@ -22,12 +22,6 @@ StringView::StringView (char const* ptr, size_t sz) noexcept
 {}
 
 
-template <size_t N>
-StringView::StringView (char const (&arr)[N]) noexcept
-    : StringView (arr, N)
-{}
-
-
 StringView::StringView (string const& str) noexcept
     : begView (str.data())
     , size_ (str.size())
@@ -89,6 +83,17 @@ char const& StringView::front() const noexcept {
 
 char const& StringView::back() const noexcept {
     return *(end() - 1);
+}
+
+
+void StringView::shorten_left (size_t n) noexcept {
+    begView += n;
+    size_ -= n;
+}
+
+
+void StringView::shorten_right (size_t n) noexcept {
+    size_ -= n;
 }
 
 
