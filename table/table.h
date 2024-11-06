@@ -36,7 +36,7 @@ public:
         return *this;
     }
 
-    void check_column (std::string const&);
+    bool has_column (std::string const&) const noexcept;
 
     void create_files() const;
 

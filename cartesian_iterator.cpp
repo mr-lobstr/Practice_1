@@ -9,8 +9,8 @@ CartesianIterator::CartesianIterator (Database& db, TablesNames const& tablesNam
 {
     tablesIters.reserve (tablesIters.size());
 
-    for (auto& name : tablesNames) {
-        tablesIters.emplace_back (name, database.get_table(name).begin());
+    for (auto& tableName : tablesNames) {
+        tablesIters.emplace_back (tableName, get_table_begin (tableName));
     }
 }
 
@@ -48,7 +48,7 @@ void CartesianIterator::operator++() {
     if (cnt != tablesIters.size()) {
         for (size_t i = 0; i < cnt; ++i) {
             auto& [tableName, it] = tablesIters[i];
-            it = database.get_table (tableName).begin();
+            it = get_table_begin (tableName);
         }
     } else {
         isEnd = true;
@@ -69,4 +69,9 @@ void CartesianIterator::reset() noexcept {
 
         isEnd = true;
     }
+}
+
+
+Table::Iterator CartesianIterator::get_table_begin (std::string const& tableName) const {
+    return database.tables[tableName].begin();
 }

@@ -13,12 +13,8 @@ Table::Table (string const& name_, Database const& db)
 {}
 
 
-void Table::check_column (std::string const& columnName) {
-    try {
-        columns[columnName];
-    } catch (invalid_argument const& e) {
-        cerr << " " << columnName << ": ";
-    }
+bool Table::has_column (std::string const& columnName) const noexcept {
+    return columns.find (columnName) != columns.end();
 }
 
 

@@ -23,6 +23,9 @@ public:
     void reset() noexcept;
 
 private:
+    Table::Iterator get_table_begin (std::string const&) const;
+
+private:
     bool isEnd = false;
     Database& database;
     ds::DynamicArray<ds::Pair<std::string, Table::Iterator>> tablesIters;

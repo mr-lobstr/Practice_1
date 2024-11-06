@@ -34,99 +34,121 @@ Database::Database (string const& path_, string const& schemaName)
 
 void Database::insert (std::string const& tableName, Table::Row const& row) {
     try {
+        excpetion_if_hasnot_table (tableName);
         tables[tableName].insert_back (row);
-    } catch (invalid_argument const& e) {
-        cerr << "ошибка при выполнении INSERT:\n"
-             << tableName << ": " << e.what() << endl;
     } catch (runtime_error const& re) {
-        cerr << "ошибка при выполнении INSERT:\n"
-             << re.what() << endl;
+        cerr << "ошибка при выполнении INSERT:\n" << re.what() << endl;
     }
 }
 
 
 void Database::erase (std::string const& tableName, Conditions condition) {
     try {
-        tables[tableName];
-    } catch (invalid_argument const& e) {
-        cerr << "ошибка при выполнении DELETE:\n"
-             << tableName << ": " << e.what() << endl;
-    }
+        excpetion_if_hasnot_table (tableName);
 
-    try {
         auto it = IteratorWithCondition (*this, {tableName}, condition);
 
         while (not it.is_end()) {
             it[tableName].erase();
         }
-    } catch (runtime_error const& re) {
-        cerr << "ошибка при выполнении DELETE:\n"
-             << tableName << ": " << re.what() << endl;
+    } catch (exception const& re) {
+        cerr << "ошибка при выполнении DELETE:\n" << re.what() << endl;
+    }
+}
+
+
+std::string file_name (string name, TablesNames const& tNames) {
+    for (auto& tName : tNames) {
+        name += "_" + tName;
+    }
+    
+    name +=".txt";
+    return name;
+}
+
+
+void print_file_head (ofstream& select, TableColumnPairs const& tcPairs) {
+    bool isFirst = true;
+
+    for (auto& [_, columnName] : tcPairs) {
+        select << (isFirst ? "" : ", ") << columnName;
+        isFirst = false;
+    }
+
+    select << endl;
+}
+
+
+template <typename Iter>
+void print_file_rows (ofstream& select, Iter& it, TableColumnPairs const& tcPairs) {
+    while (not it.is_end()) {
+        bool isFirst = true;
+
+        for (auto& [tableName, columnName] : tcPairs) {
+            select << (isFirst ? "" : ", ") << it[tableName][columnName];
+            isFirst = false;
+        }
+        
+        select << endl;
+        ++it;
     }
 }
 
 
 void Database::select (TablesNames const& tNames, TableColumnPairs const& tcPairs) {
-    tables_columns_check (tcPairs);
-    auto selectName = select_table_name (tNames);
-    
-    ofstream select (selectName);
-    bool isFirst = true;
+    try {
+        tables_columns_check (tcPairs);
+        ofstream select (file_name ("select", tNames));
 
-    for (auto& [_, columnName] : tcPairs) {
-        select << (isFirst ? "" : ", ")
-               << columnName;
-        isFirst = false;
+        auto it = CartesianIterator (*this, tNames);
+        print_file_head (select, tcPairs);
+        print_file_rows (select, it, tcPairs);
+
+        select.close();
+    } catch (exception const& re) {
+        cerr << "ошибка при выполнении SELECT:\n" << re.what() << endl;
     }
-    select << endl;
-    isFirst = true;
-
-    auto it = CartesianIterator (*this, tNames);
-
-    while (not it.is_end()) {
-        for (auto& [tableName, columnName] : tcPairs) {
-            select << (isFirst ? "" : ", ")
-                   << it[tableName][columnName];
-            isFirst = false;
-        }
-        select << endl;
-        ++it;
-    }
-
-    select.close();
 }
 
 
-Table& Database::get_table (string const& tableName) {
+void Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPairs, Conditions& condition) {
     try {
-        return tables [tableName];
-    } catch (invalid_argument const& e) {
-        cerr << tableName << ": ";
+        tables_columns_check (tcPairs);
+        ofstream filter (file_name ("filter", tNames));
+
+        auto it = IteratorWithCondition (*this, tNames, condition);
+        print_file_head (filter, tcPairs);
+        print_file_rows (filter, it, tcPairs);
+
+        filter.close();
+    } catch (exception const& re) {
+        cerr << "ошибка при выполнении FILTER:\n" << re.what() << endl;
     }
+}
+
+
+bool Database::has_table (string const& tableName) const noexcept {
+    return tables.find (tableName) != tables.end();
+}
+
+
+void Database::excpetion_if_hasnot_table (std::string const& tableName) const {
+    if (not has_table (tableName)) throw invalid_argument (
+        "база данных не содержит таблицу \'"
+      + string (tableName) + "\'\n"
+    );    
 }
 
 
 void Database::tables_columns_check (TableColumnPairs const& tcPairs) {
     for (auto& [tableName, columnName] : tcPairs) {
-        get_table(tableName).check_column (columnName);
+        excpetion_if_hasnot_table (tableName);
+
+        if (not tables[tableName].has_column (columnName)) {
+            throw invalid_argument (
+                "таблица \'" + string (tableName)
+              + "\' не содержит колонку \'" + string (tableName) + "\'\n"
+            );
+        }
     }
-}
-
-
-std::string Database::select_table_name (TablesNames const& tNames) {
-    string name = "select";
-
-    for (auto& tName : tNames) {
-        name += "_" + tName;
-    }
-
-    name.pop_back();
-    return name;
-}
-
-
-void Database::create_select (string const& tableName, TableColumnPairs const& tcPairs) {
-    auto& table = tables.emplace_add (tableName, tableName, *this)->value;
-    table.set_columns (columns.begin(), columns.end());
-    table.create_files();
 }

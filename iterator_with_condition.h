@@ -13,7 +13,7 @@ public:
 
     Table::Iterator const& operator[] (std::string const&) const;
 
-    void next();
+    void operator++();
     bool is_end() const noexcept;
     void reset() noexcept;
 

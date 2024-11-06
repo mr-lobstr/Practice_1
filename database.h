@@ -18,15 +18,18 @@ class Database {
 public:
     Database (std::string const&, std::string const&);
 
-    void select (TablesNames const&, TableColumnPairs const&);
     void insert (std::string const&, Table::Row const&);
     void erase (std::string const&, Conditions);
+    void select (TablesNames const&, TableColumnPairs const&);
+    void filter (TablesNames const&, TableColumnPairs const&, Conditions&);
+
+    bool has_table (std::string const&) const noexcept;
 
 private:
-    Table& get_table (std::string const&);
+    void excpetion_if_hasnot_table (std::string const&) const;
 
     void tables_columns_check (TableColumnPairs const&);
-    std::string select_table_name (TablesNames const&);
+    std::string select_file_name (TablesNames const&);
     void create_select (std::string const&, TableColumnPairs const&);
 
 private:

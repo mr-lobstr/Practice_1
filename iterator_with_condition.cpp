@@ -17,7 +17,7 @@ Table::Iterator const& IWC::operator[] (string const& tableName) const {
 }
 
 
-void IWC::next() {
+void IWC::operator++() {
    ++iter;
     validate();
 }
