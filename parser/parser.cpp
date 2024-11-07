@@ -37,6 +37,19 @@ void Parser::tokenize() {
     for (auto beg = str.begin(); beg != str.end(); ++beg) {       
         if (isspace (*beg)) {
             continue;
+        } else if (*beg == '\'') {
+            auto it = algs::find_if (beg+1, str.end(), [this] (char c) {
+                return c == '\'';
+            });
+
+            if (it == str.end()) {
+                tokens.emplace_back (beg, it);
+                break;
+            }
+            
+            tokens.emplace_back (beg, it + 1);
+            beg = it;
+            
         } else if (is_special (*beg)) {
             tokens.emplace_back (beg, beg + 1);
         } else {
@@ -100,8 +113,7 @@ Request* Parser::select_parse() {
 
     if (tokenIt != tokens.end()) {
         auto pFReq = new FilterRequest (move (*pReq));
-        auto c = where_parse();
-        pFReq->condition  = c;
+        pFReq->condition = where_parse();
         delete (pReq);
 
         return pFReq;
@@ -186,6 +198,10 @@ void Parser::expected_received (string const& exp, TokenIter_ it) {
 
 StringView Parser::get_value (StringView value) {
     if (value.front() == '\'' and value.back() == '\'') {
+        throw_if (algs::count (value.begin(), value.end(), ' ') != 0,
+            "значение " + value + " содержит пробелы\n"
+        );
+
         value.shorten_left (1);
         value.shorten_right (1);
         return value;

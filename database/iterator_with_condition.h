@@ -18,13 +18,12 @@ public:
     Table::Iterator const& operator[] (std::string const&) const;
 
     void operator++();
+    void validate ();
     bool is_end() const noexcept;
     void reset() noexcept;
 
 private:
     using OperIt = Condition::ConstBranchIt;
-
-    void validate ();
 
     bool condition_fulfilled() const;
     bool compute_condition (OperIt) const;

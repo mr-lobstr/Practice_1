@@ -35,13 +35,13 @@ void Database::insert (std::string const& tableName, Table::Row const& row) {
     try {
         excpetion_if_hasnot_table (tableName);
         tables[tableName].insert_back (row);
-    } catch (runtime_error const& re) {
+    } catch (exception const& re) {
         cerr << "ошибка при выполнении INSERT:\n" << re.what() << endl;
     }
 }
 
 
-void Database::erase (std::string const& tableName, Conditions condition) {
+void Database::erase (std::string const& tableName, Condition& condition) {
     try {
         excpetion_if_hasnot_table (tableName);
 
@@ -49,6 +49,7 @@ void Database::erase (std::string const& tableName, Conditions condition) {
 
         while (not it.is_end()) {
             it[tableName].erase();
+            it.validate();
         }
     } catch (exception const& re) {
         cerr << "ошибка при выполнении DELETE:\n" << re.what() << endl;
@@ -110,7 +111,7 @@ void Database::select (TablesNames const& tNames, TableColumnPairs const& tcPair
 }
 
 
-void Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPairs, Conditions& condition) {
+void Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPairs, Condition& condition) {
     try {
         tables_columns_check (tcPairs);
         ofstream filter (file_name ("filter", tNames));

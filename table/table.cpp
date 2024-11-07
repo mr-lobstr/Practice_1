@@ -41,7 +41,8 @@ void Table::insert_back (Row const& row) {
         auto recieved = to_string (row.size());
 
         throw std::invalid_argument (
-            "ожидалось " + expected + " аргументов, получено " + recieved + "\n"
+            "неверное количество аргументов: ожидалось "
+          + expected + ", получено " + recieved + "\n"
         );
     }
         

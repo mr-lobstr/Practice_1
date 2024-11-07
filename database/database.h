@@ -21,7 +21,7 @@ public:
     Database (std::string const&, std::string const&);
 
     void insert (std::string const&, Table::Row const&);
-    void erase (std::string const&, Condition);
+    void erase (std::string const&, Condition&);
     void select (TablesNames const&, TableColumnPairs const&);
     void filter (TablesNames const&, TableColumnPairs const&, Condition&);
 

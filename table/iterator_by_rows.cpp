@@ -1,4 +1,5 @@
 #include <utility>
+#include "iterator_by_rows.h"
 #include "iterator_by_rows_impl.cpp"
 using namespace std;
 

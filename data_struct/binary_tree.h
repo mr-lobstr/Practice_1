@@ -136,22 +136,28 @@ namespace data_struct
             if (rhs.empty())
                 return;
             
-            Stack<ConstBranchIt> stack{};
-            stack.push (rhs.root());
+            Stack<ConstBranchIt> rhsStack{};
+            Stack<BranchIt> stack{};
             auto it = root();
+            auto rhsIt = rhs.root();
 
-            while (not stack.empty()) {
-                auto& top = stack.top();
-
-                if (top.is_leaf()) {
-                    insert (Tilt::to_left, it, *top);
+            while (not rhsIt.is_end() or not rhsStack.empty()) {
+                if (not rhsStack.empty()) {
+                    rhsIt = rhsStack.top();
+                    it = stack.top();
+                    rhsStack.pop();
                     stack.pop();
-                } else if (top.left().is_end()) {
-                    insert (Tilt::to_left, it.right(), T{});
-                    stack.push (top.right());                    
-                } else {
-                    insert (Tilt::to_left, it.left(), T{});
-                    stack.push (top.left());
+                }
+
+                while (not rhsIt.is_end()) {
+                    insert (Tilt::to_left, it, *rhsIt);
+
+                    if (not rhsIt.right().is_end()) {
+                        rhsStack.push (rhsIt.right());
+                        stack.push (it.right());
+                    }
+                    rhsIt.to_left();
+                    it.to_left();
                 }
             }
         }
@@ -159,6 +165,7 @@ namespace data_struct
         BinTree& operator= (BinTree&& rhs) noexcept {
             if (this != &rhs) {
                 auto tmp {std::move (rhs)};
+                swap (tmp);
             }
             return *this;
         }
@@ -166,6 +173,7 @@ namespace data_struct
         BinTree& operator= (BinTree const& rhs) noexcept {
             if (this != &rhs) {
                 auto tmp (rhs);
+                swap (tmp);
             }
             return *this;
         }
@@ -181,6 +189,9 @@ namespace data_struct
             }
         };
 
+        void swap (BinTree& rhs) noexcept {
+            std::swap (ptrRoot, rhs.ptrRoot);
+        }
 
         bool empty() const noexcept {
             return root().is_end();

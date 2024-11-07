@@ -6,6 +6,8 @@
 #include "../data_struct/string_view.h"
 #include "../data_struct/list.h"
 
+class Table;
+
 class IteratorByRows {
     using Self = IteratorByRows;
     using Rows = data_struct::List<std::string>;
