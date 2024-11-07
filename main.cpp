@@ -1,54 +1,55 @@
 #include <string>
 #include <iostream>
-#include "database.h"
+#include "database/database.h"
+#include "parser/parser.h"
 
 #include "table/iterator_by_rows.cpp"
 #include "table/file_manager.cpp"
 #include "table/table.cpp"
 #include "data_struct/string_view.cpp"
 #include "table/table_state_guard.cpp"
-#include "conditions_parser.cpp"
-#include "cartesian_iterator.cpp"
-#include "iterator_with_condition.cpp"
-#include "database.cpp"
+#include "parser/conditions_parser.cpp"
+#include "parser/parser.cpp"
+#include "parser/request.cpp"
+#include "database/cartesian_iterator.cpp"
+#include "database/iterator_with_condition.cpp"
+#include "database/database.cpp"
 
 using namespace std;
 using namespace data_struct;
 
 int main()
 {
-    Database db("./", "schema.json");
-    int _;
-    // cin >> _;
-    string s = "таблица1";
-    DynamicArray<StringView> dsv = {"1,"s, "2,"s, "3,"s, "4,"s};
-    db.insert (s, dsv);    
+    Database database("./", "schema.json");
+    Parser parser;
+    string s;
 
-    string condS = " таблица1.колонка1 = 'Ababua' OR таблица2.колонка2 = 'aa' ";
-    auto cond = ConditionParser (condS).get_condition();
+    while (true) {
+        cout << ">>> ";
+        getline (cin, s);
 
-    DynamicArray<string> d = {"таблица1"};
-    db.filter (
-        {"таблица1", "таблица2"}
-      , {
-            {"таблица1"s, "колонка1"s}
-          , {"таблица1"s, "колонка2"s}
-          , {"таблица1"s, "колонка3"s}
-          , {"таблица1"s, "колонка4"s}
-          , {"таблица2"s, "колонка1"s}
-          , {"таблица2"s, "колонка2"s}        
+        if (s == "exit") {
+            break;
         }
-      , cond
-    );
-    // IteratorWithCondition it (db, d, cond);
 
-    // while (not it.is_end()) {
-    //     // string t1 = "таблица1", t2 = "таблица2", c1 = "колонка1";
+        parser.give_str (s);
+        Request* request;
 
-    //     // cout << it[t1]["таблица1_pk"]<< " " <<it[t1][c1] << " ";
-    //     // cout << it[t2]["таблица2_pk"]<< " " << it[t2][c1] << endl;
+        try {
+            request = parser.parse();
+        } catch (exception const& e) {
+            cerr << "во время разбора запроса возникла ошибка:\n"
+                 << e.what();
+            continue;
+        }
 
-    //     it["таблица1"].erase();
-    //     ++it;
-    // }
+        try {
+            request->execute(database);
+        } catch (exception const& e) {
+            cerr << e.what();
+            continue;
+        }
+
+        delete (request);
+    }
 }

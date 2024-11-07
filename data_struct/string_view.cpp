@@ -28,8 +28,24 @@ StringView::StringView (string const& str) noexcept
 {}
 
 
+StringView::StringView (string::const_iterator beg, string::const_iterator end) noexcept
+    : begView (beg.base())
+    , size_ (end - beg)
+{}
+
+
 StringView::operator string() const {
     return string (begin(), size());
+}
+
+
+string operator+ (string str, StringView sv) {
+    return str += sv; 
+}
+
+
+string operator+ (StringView sv, string str) {
+    return str += sv; 
 }
 
 
@@ -144,11 +160,14 @@ DynamicArray<StringView> split_into_words (StringView const& sv) {
 }
 
 
-string join_views (DynamicArray<StringView> const& views) {   
+string join_views (DynamicArray<StringView> const& views, string const& separator) {   
     auto str = ""s;
+    bool isFirst = true;
 
     for (auto& view : views) {
-        str += string (view);
+        str += (isFirst ? "" : separator);
+        str += view;
+        isFirst = false;
     }
 
     return str;

@@ -2,14 +2,16 @@
 #define DATABASE_H_GUARD
 
 #include <string>
-#include "conditions_parser.h"
-#include "table/table.h"
-#include "data_struct/hash_table.h"
 #include "iterator_with_condition.h"
+#include "../table/table.h"
+#include "../data_struct/binary_tree.h"
+#include "../data_struct/hash_table.h"
 
 namespace ds = data_struct;
 
-using TableColumnPairs = ds::DynamicArray<ds::Pair<StringView, StringView>>;
+using Condition = ds::BinTree<std::string>;
+using TableColumn = ds::Pair<StringView, StringView>;
+using TableColumnPairs = ds::DynamicArray<TableColumn>;
 
 class Database {
     friend Table;
@@ -19,9 +21,9 @@ public:
     Database (std::string const&, std::string const&);
 
     void insert (std::string const&, Table::Row const&);
-    void erase (std::string const&, Conditions);
+    void erase (std::string const&, Condition);
     void select (TablesNames const&, TableColumnPairs const&);
-    void filter (TablesNames const&, TableColumnPairs const&, Conditions&);
+    void filter (TablesNames const&, TableColumnPairs const&, Condition&);
 
     bool has_table (std::string const&) const noexcept;
 

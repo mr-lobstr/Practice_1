@@ -15,43 +15,26 @@ class Table {
 
 public:
     using Iterator = IteratorByRows;
-
-    enum Lock {
-        lock = true
-      , unlock = false
-    };
+    using Row = ds::DynamicArray<StringView>;
 
 public:
     Table (std::string const&, Database const&);
-    ~Table() noexcept = default;
-    
-    template <typename Iter>
-    Table& set_columns (Iter beg, Iter end) {
-        size_t index = 1;
-
-        algs::for_each (beg, end, [&] (auto& column) {
-            columns.add (column, index++);
-        });
-        
-        return *this;
-    }
 
     bool has_column (std::string const&) const noexcept;
+    std::size_t rows_limit() const noexcept;
+    std::string path_dir() const;
+    std::string header() const;
+    
+    template <typename Iter>
+    Table& set_columns (Iter, Iter);
 
     void create_files() const;
 
     Iterator begin() const;
     Iterator end() const;
 
-    using Row = ds::DynamicArray<StringView>;
-
     void insert_back (Row const&);
     void erase (Iterator&);
-
-private:
-    std::size_t rows_limit() const noexcept;
-    std::string path_dir() const;
-    std::string header() const;
 
 private:
     std::string name{};
@@ -61,5 +44,16 @@ private:
     Database const& database;
 };
 
+
+template <typename Iter>
+Table& Table::set_columns (Iter beg, Iter end) {
+    size_t index = 1;
+
+    algs::for_each (beg, end, [&] (auto& column) {
+        columns.add (column, index++);
+    });
+        
+    return *this;
+}
 
 #endif

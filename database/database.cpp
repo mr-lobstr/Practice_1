@@ -1,8 +1,8 @@
 #include <string>
 #include <fstream>
 #include <filesystem>
-#include "nlohmann/json.hpp"
 #include "database.h"
+#include "../nlohmann/json.hpp"
 using namespace std;
 using namespace data_struct;
 using namespace nlohmann;
@@ -15,7 +15,6 @@ Database::Database (string const& path_, string const& schemaName)
     jFile.close();
 
     pathDir = path_ + string (resp["name"]) + "/";
-    
     rowsLimit = resp["tuples_limit"];
     auto const& jTables = resp["structure"];
 
@@ -134,8 +133,7 @@ bool Database::has_table (string const& tableName) const noexcept {
 
 void Database::excpetion_if_hasnot_table (std::string const& tableName) const {
     if (not has_table (tableName)) throw invalid_argument (
-        "база данных не содержит таблицу \'"
-      + string (tableName) + "\'\n"
+        "база данных не содержит таблицу \'" + tableName + "\'\n"
     );    
 }
 
@@ -146,8 +144,7 @@ void Database::tables_columns_check (TableColumnPairs const& tcPairs) {
 
         if (not tables[tableName].has_column (columnName)) {
             throw invalid_argument (
-                "таблица \'" + string (tableName)
-              + "\' не содержит колонку \'" + string (tableName) + "\'\n"
+                "таблица \'" + tableName + "\' не содержит колонку \'" + tableName + "\'\n"
             );
         }
     }

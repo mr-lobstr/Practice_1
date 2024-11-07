@@ -165,7 +165,7 @@ namespace data_struct
 
         BinTree& operator= (BinTree const& rhs) noexcept {
             if (this != &rhs) {
-                auto tmp {std::move (rhs)};
+                auto tmp (rhs);
             }
             return *this;
         }

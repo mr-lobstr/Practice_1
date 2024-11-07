@@ -105,6 +105,21 @@ namespace algs
         }
         return end;
     }
+
+
+    template <typename Iter, typename T>
+    auto count (Iter beg, Iter end, T const& value) {
+        std::size_t cnt = 0;
+
+        while (beg != end) {
+            if (*beg == value) {
+                ++cnt;
+            }
+            ++beg;
+        }
+
+        return cnt;
+    }
 }
 
 #endif

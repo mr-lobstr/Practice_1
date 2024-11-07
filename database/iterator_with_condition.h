@@ -2,14 +2,18 @@
 #define ITERATOR_WITH_CONDITION_H_GUARD
 
 #include <string>
-#include "data_struct/dynamic_array.h"
-#include "conditions_parser.h"
 #include "cartesian_iterator.h"
+#include "../data_struct/dynamic_array.h"
+#include "../data_struct/binary_tree.h"
+
+using Condition = ds::BinTree<std::string>;
+using TableColumn = ds::Pair<StringView, StringView>;
+using TableColumnPairs = ds::DynamicArray<TableColumn>;
 
 
 class IteratorWithCondition {
 public:
-    IteratorWithCondition (Database&, ds::DynamicArray<std::string> const&, Conditions&);
+    IteratorWithCondition (Database&, TablesNames const&, Condition&);
 
     Table::Iterator const& operator[] (std::string const&) const;
 
@@ -18,9 +22,9 @@ public:
     void reset() noexcept;
 
 private:
-    void validate ();
+    using OperIt = Condition::ConstBranchIt;
 
-    using OperIt = Conditions::ConstBranchIt;
+    void validate ();
 
     bool condition_fulfilled() const;
     bool compute_condition (OperIt) const;
@@ -29,7 +33,7 @@ private:
 
 private:
     CartesianIterator iter;
-    Conditions& condition;
+    Condition& condition;
 };
 
 #endif

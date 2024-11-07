@@ -2,24 +2,23 @@
 using namespace std;
 using namespace data_struct;
 
-void throw_if (bool errorCondition, std::string const& errorMessage) {
+void throw_if (bool errorCondition, string const& errorMessage) {
     if (errorCondition) throw std::runtime_error (
         errorMessage
     );
 }
 
-ConditionParser::ConditionParser (string str_)
-    : str (std::move (str_))
+ConditionParser::ConditionParser (DynamicArray<StringView> words_)
+    : words (std::move (words_))
 {
-    auto jj = split_into_words (str);
-    for (auto sv : jj) {
-        words.push_back (sv);
-    }
+    throw_if (empty(), 
+        "невозможно разобрать пустое выражение WHERE\n"
+    );
 }
 
 
 template <typename Check>
-string check_and_get_first (DynamicArray<string>& words, Check check) {
+string check_and_get_first (DynamicArray<StringView>& words, Check check) {
     string mess, first = words.front();
     bool condition;
 
@@ -38,10 +37,6 @@ bool ConditionParser::empty() const noexcept {
 
 
 Conditions ConditionParser::get_next_token() {
-    throw_if (empty(), 
-        "невозможно разобрать пустую строку\n"
-    );
-
     auto first = check_and_get_first (words,
         [this] (auto& f, auto& cond, auto& mess) {
             cond = (is_operand(f) or is_operator(f)) and not is_eq(f);

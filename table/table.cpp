@@ -1,6 +1,6 @@
 #include "table.h"
-#include "../database.h"
 #include "table_state_guard.h"
+#include "../database/database.h"
 #include "../data_struct/string_view.h"
 
 using namespace std;
@@ -49,7 +49,7 @@ void Table::insert_back (Row const& row) {
     
     fm.add_page (stateGuard.current_page(), [&] (auto& fPage) {
         fPage << stateGuard.current_pk() << ","
-              << join_views (row) << "\n";
+              << join_views (row, ",") << "\n";
     });
 
     stateGuard.recording_finish();

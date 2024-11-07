@@ -76,6 +76,12 @@ struct FAdder
 };
 
 
+enum LockState {
+    lock = true
+  , unlock = false
+};
+
+
 bool TFM::is_locked() const {
     bool isLocked;
     FReader fileLock (lock_file_path());
@@ -86,13 +92,13 @@ bool TFM::is_locked() const {
 
 void TFM::lock() const {
     FWriter fileLock (lock_file_path());
-    fileLock << Table::lock;
+    fileLock << LockState::lock;
 }
 
 
 void TFM::unlock() const {
     FWriter fileLock (lock_file_path());
-    fileLock << Table::unlock;
+    fileLock << LockState::unlock;
 }
 
 

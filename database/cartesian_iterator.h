@@ -2,8 +2,8 @@
 #define CARTESIAN_ITERATOR_H_GUARD
 
 #include <string>
-#include "data_struct/dynamic_array.h"
-#include "table/table.h"
+#include "../table/table.h"
+#include "../data_struct/dynamic_array.h"
 namespace ds = data_struct;
 
 class Database;
@@ -19,7 +19,6 @@ public:
 
     void operator++();
     bool is_end() const noexcept;
-
     void reset() noexcept;
 
 private:
@@ -30,7 +29,5 @@ private:
     Database& database;
     ds::DynamicArray<ds::Pair<std::string, Table::Iterator>> tablesIters;
 };
-
-
 
 #endif
