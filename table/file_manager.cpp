@@ -6,10 +6,10 @@ using namespace std;
 using namespace filesystem;
 using namespace data_struct;
 
-using TFM = TableFileManager;
+using TFM = TFileManager;
 
 
-TFM::TableFileManager (Table& table_) noexcept
+TFM::TFileManager (Table const& table_) noexcept
     : table (table_)
 {}
 
@@ -76,29 +76,17 @@ struct FAdder
 };
 
 
-enum LockState {
-    lock = true
-  , unlock = false
-};
-
-
-bool TFM::is_locked() const {
-    bool isLocked;
+TMode TFM::get_mode() const {
+    int mode;
     FReader fileLock (lock_file_path());
-    fileLock >> isLocked;
-    return isLocked;
+    fileLock >> mode;
+    return static_cast<TMode> (mode);
 }
 
 
-void TFM::lock() const {
+void TFM::set_mode (TMode mode) const {
     FWriter fileLock (lock_file_path());
-    fileLock << LockState::lock;
-}
-
-
-void TFM::unlock() const {
-    FWriter fileLock (lock_file_path());
-    fileLock << LockState::unlock;
+    fileLock << (int) mode;
 }
 
 
@@ -150,22 +138,31 @@ string TFM::position_file_path() const {
 }
 
 
-void TFM::create_files() const {
-    bool isNewDir = create_directory (table.path_dir());
+bool TFM::create_table_dir() const {
+    return create_directory (table.path_dir());
+}
 
-    if (isNewDir) {
-        creat_page (1);
-        set_position (1, 0);
-        set_prime_key (0);
+
+string create_table_header (TableName name, HashTable<Column, ColumnNumb> const& columns) {
+    DynamicArray<Column const*> ptrsColumns (columns.size());
+
+    for (auto& [column, index] : columns) {
+        ptrsColumns[index-1] = &column;
     }
 
-    unlock();
+    string header = name + "_pk";
+
+    for (auto& pColumn : ptrsColumns) {
+        header += ("," + *pColumn);
+    }
+
+    return header;
 }
 
 
 void TFM::creat_page (size_t numb) const {
     FWriter filePage (page_file_path (numb));
-    filePage << table.header() << "\n";
+    filePage << create_table_header (table.name, table.columns) << "\n";
 }
 
 

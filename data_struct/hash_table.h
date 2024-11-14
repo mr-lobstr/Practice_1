@@ -155,7 +155,7 @@ namespace data_struct
             auto it = find (key);
 
             if (it == end()) throw std::invalid_argument (
-                "не существует элемента с таким ключом\n"
+                "не существует элемента с таким ключом: "
             );
 
             return it->value;

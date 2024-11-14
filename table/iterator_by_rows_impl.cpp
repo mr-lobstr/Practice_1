@@ -1,40 +1,49 @@
 #include <fstream>
-#include "../data_struct/list.h"
 #include "iterator_by_rows.h"
 #include "table.h"
-#include "table_state_guard.h"
+#include "table_state.h"
+#include "../data_struct/list.h"
 
 using namespace std;
 using namespace data_struct;
 
 
-using RowsList = data_struct::List<string>;
-using ListIter = typename RowsList::const_iterator;
-
-
 class IteratorByRows::IterImpl {
 public:
-    IterImpl (Table const& table_)
-        : table (table_)
-        , stateGuard (table_)
-        , pagesCnt (stateGuard.current_page())
-    {
-        auto minNumb = min(pagesCnt, maxPageCnt);
+    IterImpl (IterImpl const&) = delete;
+    IterImpl (IterImpl&&) = delete;
 
-        while (pagesLoaded < minNumb) {
-            try{
-                next_page_load();
-            } catch (runtime_error const& re) {
-                cerr << "ошибка при чтении страницы " << pagesLoaded << ":\n";
-                throw;
-            }
+    IterImpl (Table const& table_, TMode mode_)
+        : table (const_cast<Table&> (table_))
+        , stateGuard (table.state, mode_)
+    {
+        init();
+    }
+
+    ~IterImpl() noexcept {
+        reset();
+    };
+
+    void init() {
+        currentPage  = 1;
+        readRowsCnt  = 0;
+        pagesLoaded  = 0;
+        rowsDeleted  = 0;
+
+        pagesCnt = table.state.current_page();
+
+        while (pagesLoaded < min(pagesCnt, maxPageCnt)) {
+            next_page_load();
         }
 
         currRowIt = rows.begin();
     }
 
-    ~IterImpl() noexcept {
-        while (rowsDeleted != 0 and not is_end()) {
+    void reset() {
+        if (rowsDeleted == 0)
+            return;
+
+        while (not is_end()) {
             next();
         }
 
@@ -42,48 +51,17 @@ public:
             current_page_upload ();
         }
 
-        if (rowsDeleted > 0) {
-            while (currentPage <= pagesCnt) {
-                table.fm.delete_page(currentPage++);
-            }
+        while (currentPage <= pagesCnt) {
+            table.fm.delete_page (currentPage++);
         }
-        };
-
-    IterImpl (IterImpl const&) = delete;
-    IterImpl (IterImpl&&) = delete;
+    }
 
     void next() {
         ++currRowIt;
-        if (readRowsCnt % table.rows_limit() == 0) {
-            current_page_upload();
-            next_page_load();
-        }
         ++readRowsCnt;
-    }
 
-    string const& get_row() const noexcept {
-        return *currRowIt;
-    }
-
-    StringView get_row_element (string const& column) const {
-        size_t ind = (column == table.name + "_pk")
-                   ? 0
-                   : table.columns [column];
-
-        auto views = split (get_row(), ','); 
-        return views[ind];
-    }
-
-    void erase()
-    {   
-        if (rowsDeleted == 0) {
-            stateGuard.set_position (currentPage - 1, table.rows_limit());
-        }
-
-        currRowIt = rows.erase (currRowIt);
-        ++rowsDeleted;
-
-        if (rowsDeleted % table.rows_limit() == 0) {
+        if (one_page_read()) {
+            current_page_upload();
             next_page_load();
         }
     }
@@ -91,14 +69,63 @@ public:
     bool is_end() const noexcept {
         return currRowIt == rows.end();
     }
+
+    string const& get_row() const noexcept {
+        return *currRowIt;
+    }
+
+    StringView get_row_element (Column const& column) const {
+        auto row = split (get_row(), ','); 
+        return table.get_element_from (row, column);
+    }
+
+    void erase()
+    {   
+        if (rowsDeleted == 0) {
+            table.state.set_position (currentPage - 1, table.rows_limit());
+        }
+
+        currRowIt = rows.erase (currRowIt);
+        ++rowsDeleted;
+
+        if (one_page_deleted()) {
+            next_page_load();
+        }
+    }
+
+    TMode mode() const noexcept {
+        return stateGuard.mode();
+    }
+
 private:
-    void next_page_load()
-    {
+    bool one_page_read() const noexcept {
+        return readRowsCnt != 0
+           and readRowsCnt % table.rows_limit() == 0;
+    }
+
+    bool one_page_deleted() const noexcept {
+        return rowsDeleted != 0 
+           and rowsDeleted % table.rows_limit() == 0;
+    }
+
+    void next_page_load() {
         auto loadingPage = pagesLoaded + 1;
 
         if (loadingPage > pagesCnt)
             return;
 
+        try {
+            page_load (loadingPage);
+        } catch (runtime_error& re) {
+            throw runtime_error (
+                "ошибка при чтении страницы " + to_string (loadingPage) + ":\n" + re.what()
+            );
+        }
+
+        ++pagesLoaded;
+    }
+
+    void page_load (PageNumb loadingPage) {
         table.fm.read_page (loadingPage, [&] (ifstream& fPage) {
             string line;
             getline (fPage, line);
@@ -107,8 +134,6 @@ private:
                 rows.push_back (std::move (line));
             }
         });
-
-        ++pagesLoaded;
     }
 
     void current_page_upload() {
@@ -124,30 +149,25 @@ private:
     }
 
     void page_write() {
-        size_t cnt = 0;
-
         table.fm.write_page (currentPage, [&] (ofstream& fPage) {
-            auto beg = rows.begin();
+            size_t i = 1;
 
-            while (beg != currRowIt) {
+            for (auto beg = rows.begin(); beg != currRowIt; ++beg) {
                 fPage << *beg << "\n";
-                ++beg;
-                ++cnt;
+                table.state.set_position (currentPage, i++);
             }
         });
-
-        stateGuard.set_position (currentPage, cnt);
     }
 
 private:
-    Table const& table;
-    TableStateGuard stateGuard;
+    Table& table;
+    TStateGuard stateGuard;
 
-    RowsList rows{};
+    Rows rows{};
     ListIter currRowIt{};
 
     std::size_t currentPage  = 1;
-    std::size_t readRowsCnt   = 1;
+    std::size_t readRowsCnt  = 0;
     std::size_t pagesLoaded  = 0;
     std::size_t rowsDeleted  = 0;
     std::size_t pagesCnt     = 0;

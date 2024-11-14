@@ -4,8 +4,8 @@ using namespace data_struct;
 
 using IWC = IteratorWithCondition;
 
-IWC::IteratorWithCondition (Database& db, DynamicArray<string> const& tablesNames, Condition& cond)
-    : iter (db, tablesNames)
+IWC::IteratorWithCondition (Database& db, DynamicArray<string> const& tablesNames, Condition& cond, TMode mode)
+    : iter (db, tablesNames, mode)
     , condition (cond)
 {
     validate();

@@ -2,32 +2,29 @@
 #define CARTESIAN_ITERATOR_H_GUARD
 
 #include <string>
+#include "database_fwd.h"
 #include "../table/table.h"
 #include "../data_struct/dynamic_array.h"
-namespace ds = data_struct;
 
-class Database;
-
-using TablesNames = ds::DynamicArray<std::string>;
 
 class CartesianIterator {
+    using TableAndIter = ds::Pair<TableName, Table::Iterator>;
+
 public:
-    CartesianIterator (Database&, TablesNames const&);
+    CartesianIterator (Database&, TablesNames const&, TMode);
     ~CartesianIterator() noexcept;
 
-    Table::Iterator const& operator[] (std::string const&) const;
+    Table::Iterator const& operator[] (Column const&) const;
 
     void operator++();
     bool is_end() const noexcept;
     void reset() noexcept;
 
 private:
-    Table::Iterator get_table_begin (std::string const&) const;
-
-private:
-    bool isEnd = false;
     Database& database;
-    ds::DynamicArray<ds::Pair<std::string, Table::Iterator>> tablesIters;
+    ds::DynamicArray<TableAndIter> tablesIters;
+
+    bool isEnd = false;
 };
 
 #endif

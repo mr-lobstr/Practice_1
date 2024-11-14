@@ -4,13 +4,16 @@ using namespace std;
 using namespace data_struct;
 
 
-CartesianIterator::CartesianIterator (Database& db, TablesNames const& tablesNames)
+CartesianIterator::CartesianIterator (Database& db, TablesNames const& tNames, TMode mode)
     : database(db)
 {
     tablesIters.reserve (tablesIters.size());
 
-    for (auto& tableName : tablesNames) {
-        tablesIters.emplace_back (tableName, get_table_begin (tableName));
+    for (auto& tName : tNames) {
+        tablesIters.push_back ({
+            tName
+          , db.tables[tName].make_iter (mode)
+        });
     }
 }
 
@@ -20,13 +23,13 @@ CartesianIterator::~CartesianIterator() noexcept {
 }
 
 
-Table::Iterator const& CartesianIterator::operator[] (string const& tableName) const {
+Table::Iterator const& CartesianIterator::operator[] (string const& tName) const {
     auto it = algs::find_if (tablesIters.begin(), tablesIters.end(), [&] (auto& pair) {
-        return pair.first == tableName;
+        return pair.first == tName;
     });
 
     if (it == tablesIters.end()) throw std::runtime_error (
-        "таблица \'" + tableName + "\' отсутствует\n"
+        "таблица \'" + tName + "\' отсутствует\n"
     );
 
     return it->second;
@@ -47,8 +50,8 @@ void CartesianIterator::operator++() {
 
     if (cnt != tablesIters.size()) {
         for (size_t i = 0; i < cnt; ++i) {
-            auto& [tableName, it] = tablesIters[i];
-            it = get_table_begin (tableName);
+            auto& [tName, it] = tablesIters[i];
+            it.restart();
         }
     } else {
         isEnd = true;
@@ -69,9 +72,4 @@ void CartesianIterator::reset() noexcept {
 
         isEnd = true;
     }
-}
-
-
-Table::Iterator CartesianIterator::get_table_begin (std::string const& tableName) const {
-    return database.tables[tableName].begin();
 }

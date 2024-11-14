@@ -3,11 +3,11 @@
 #include "iterator_by_rows_impl.cpp"
 using namespace std;
 
-IteratorByRows::IteratorByRows (Table const& table) {
+IteratorByRows::IteratorByRows (Table const& table, TMode mode) {
     try {
-        pimpl = new IterImpl (table);
+        pimpl = new IterImpl (table, mode);
     } catch (...) {
-        reset();
+        delete (pimpl);
         throw;
     }
 }
@@ -18,17 +18,18 @@ IteratorByRows::IteratorByRows (IteratorByRows&& rhs) noexcept
 {}
 
 
-IteratorByRows::~IteratorByRows() noexcept
-{
+IteratorByRows::~IteratorByRows() noexcept {
     delete (pimpl);
 }
 
 
 IteratorByRows& IteratorByRows::operator= (IteratorByRows&& rhs) noexcept{
     if (this != &rhs) {
-        reset();
+        delete (pimpl);
+        pimpl = nullptr;
         swap (pimpl, rhs.pimpl);
     }
+    
     return *this;
 }
 
@@ -58,7 +59,11 @@ IteratorByRows& IteratorByRows::operator++() {
 }
 
 
-void IteratorByRows::erase() const{
+void IteratorByRows::erase() const {
+    if (pimpl->mode() == TMode::reading) throw runtime_error (
+        "итератор предназначен только для чтения\n"
+    );
+
     if (not is_end()) {
         pimpl->erase();
     }
@@ -72,8 +77,13 @@ bool IteratorByRows::is_end() const noexcept {
 
 
 void IteratorByRows::reset() noexcept {
-    delete (pimpl);
-    pimpl = nullptr;
+    pimpl->reset();
+}
+
+
+void IteratorByRows::restart() noexcept {
+    pimpl->reset();
+    pimpl->init();
 }
 
 

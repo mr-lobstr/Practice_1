@@ -2,18 +2,15 @@
 #define ITERATOR_WITH_CONDITION_H_GUARD
 
 #include <string>
+#include "database_fwd.h"
 #include "cartesian_iterator.h"
-#include "../data_struct/dynamic_array.h"
 #include "../data_struct/binary_tree.h"
 
-using Condition = ds::BinTree<std::string>;
-using TableColumn = ds::Pair<StringView, StringView>;
-using TableColumnPairs = ds::DynamicArray<TableColumn>;
 
 
 class IteratorWithCondition {
 public:
-    IteratorWithCondition (Database&, TablesNames const&, Condition&);
+    IteratorWithCondition (Database&, TablesNames const&, Condition&, TMode);
 
     Table::Iterator const& operator[] (std::string const&) const;
 

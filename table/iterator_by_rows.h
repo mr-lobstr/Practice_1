@@ -3,44 +3,42 @@
 
 #include <string>
 #include <cstdint>
-#include "../data_struct/string_view.h"
+#include "table_fwd.h"
 #include "../data_struct/list.h"
 
-class Table;
 
 class IteratorByRows {
     using Self = IteratorByRows;
-    using Rows = data_struct::List<std::string>;
-    using ListIter = typename Rows::const_iterator;
-
-    friend class Table;
+    using Rows = ds::List<std::string>;
+    using ListIter = Rows::const_iterator;
 
 public:
+    Self& operator= (Self const&) = delete;
+    IteratorByRows (Self const&) = delete;
+
     IteratorByRows() noexcept = default;
-    explicit IteratorByRows (Table const&);
+    explicit IteratorByRows (Table const&, TMode);
     IteratorByRows (Self&&) noexcept;
     ~IteratorByRows() noexcept;
 
     Self& operator= (Self&&) noexcept;
 
-    Self& operator= (Self const&) = delete;
-    IteratorByRows (Self const&) = delete;
-
     friend bool operator== (Self const&, Self const&) noexcept;
     friend bool operator!= (Self const&, Self const&) noexcept;
 
+    Self& operator++();
+
     bool is_end() const noexcept;
     void reset() noexcept;
+    void restart() noexcept;
 
     StringView operator[] (std::string const&) const;
     std::string const& operator*() const noexcept;
 
-    Self& operator++();
     void erase() const;
 
 private:
     struct IterImpl;
-
     IterImpl* pimpl = nullptr;
 };
 

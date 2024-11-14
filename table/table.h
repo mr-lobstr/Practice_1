@@ -1,17 +1,17 @@
 #ifndef TABLE_H_GUARD
 #define TABLE_H_GUARD
 
+#include "table_fwd.h"
 #include "file_manager.h"
 #include "iterator_by_rows.h"
+#include "table_state.h"
 #include "../data_struct/hash_table.h"
-namespace ds = data_struct;
 
-class Database;
 
 class Table {
-    friend TableFileManager;
+    friend TFileManager;
     friend IteratorByRows;
-    friend class TableStateGuard;
+    friend TState;
 
 public:
     using Iterator = IteratorByRows;
@@ -19,8 +19,11 @@ public:
 
 public:
     Table (std::string const&, Database const&);
+    
+    void init() const;
 
     bool has_column (std::string const&) const noexcept;
+
     std::size_t rows_limit() const noexcept;
     std::string path_dir() const;
     std::string header() const;
@@ -28,18 +31,19 @@ public:
     template <typename Iter>
     Table& set_columns (Iter, Iter);
 
-    void create_files() const;
+    Iterator make_iter (TMode) const;
 
-    Iterator begin() const;
-    Iterator end() const;
+    StringView get_element_from (Row, Column) const;
 
     void insert_back (Row const&);
     void erase (Iterator&);
 
 private:
+    TFileManager fm;
+    TState state;
+
     std::string name{};
-    TableFileManager fm;
-    ds::HashTable<std::string, std::size_t> columns{};
+    ds::HashTable<Column, ColumnNumb> columns{};
 
     Database const& database;
 };

@@ -5,6 +5,18 @@
 using namespace std;
 using namespace data_struct;
 
+#include "table/iterator_by_rows.cpp"
+#include "table/file_manager.cpp"
+#include "table/table.cpp"
+#include "data_struct/string_view.cpp"
+#include "table/table_state.cpp"
+#include "parser/conditions_parser.cpp"
+#include "parser/parser.cpp"
+#include "parser/request.cpp"
+#include "database/cartesian_iterator.cpp"
+#include "database/iterator_with_condition.cpp"
+#include "database/database.cpp"
+
 int main()
 {
     Database database("./", "schema.json");

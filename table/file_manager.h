@@ -4,49 +4,47 @@
 #include <string>
 #include <fstream>
 #include <functional>
-#include "../data_struct/my_algorithm.h"
-
-class Table;
+#include "table_fwd.h"
 
 
-class TableFileManager {
-    using Position = data_struct::Pair<std::size_t, std::size_t>;
-    using Self = TableFileManager;
+class TFileManager {
+    using Position = ds::Pair<PageNumb, RowNumb>;
+    using Self = TFileManager;
 
 public:
-    TableFileManager (Table&) noexcept;
-    ~TableFileManager() noexcept = default;
+    TFileManager (Table const&) noexcept;
+    ~TFileManager() noexcept = default;
 
     Self& operator= (Self const&) = delete;
     Self& operator= (Self&&) = delete;
 
-    bool is_locked() const;
-    void lock() const;
-    void unlock() const;
-
-    size_t get_prime_key() const;
+public:
+    TMode get_mode() const;
+    PrimeKey get_prime_key() const;
     Position get_position() const;
-    void set_prime_key (std::size_t) const;
-    void set_position (std::size_t, std::size_t) const;
 
-    void create_files() const;
+    void set_mode (TMode) const;
+    void set_prime_key (PrimeKey) const;
+    void set_position (PageNumb, RowNumb) const;
 
-    void creat_page (std::size_t) const;
-    void write_page (std::size_t, std::function<void(std::ofstream&)>) const;
-    void add_page (std::size_t, std::function<void(std::ofstream&)>) const;
-    void read_page (std::size_t, std::function<void(std::ifstream&)>) const;
-    void delete_page (std::size_t) const;
+    bool create_table_dir() const;
+
+    void creat_page (PageNumb) const;
+    void delete_page (PageNumb) const;
+
+    void write_page (PageNumb, std::function<void(std::ofstream&)>) const;
+    void add_page (PageNumb, std::function<void(std::ofstream&)>) const;
+    void read_page (PageNumb, std::function<void(std::ifstream&)>) const;
 
 private:
-    std::string page_file_path (std::size_t) const;
+    std::string page_file_path (PageNumb) const;
     std::string pk_file_path() const;
     std::string lock_file_path() const;
     std::string position_file_path() const;
 
 private:
-    friend class TableStateGuard;
-
-    Table& table;
+    friend TState;
+    Table const& table;
 };
 
 #endif

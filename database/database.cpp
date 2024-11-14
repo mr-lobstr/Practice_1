@@ -26,7 +26,7 @@ Database::Database (string const& path_, string const& schemaName)
 
         auto& table = tables.emplace_add (tableName, tableName, *this)->value;
         table.set_columns (columns.begin(), columns.end());
-        table.create_files();
+        table.init();
     }
 }
 
@@ -45,7 +45,7 @@ void Database::erase (std::string const& tableName, Condition& condition) {
     try {
         excpetion_if_hasnot_table (tableName);
 
-        auto it = IteratorWithCondition (*this, {tableName}, condition);
+        auto it = IteratorWithCondition (*this, {tableName}, condition, TMode::writing);
 
         while (not it.is_end()) {
             it[tableName].erase();
@@ -100,7 +100,7 @@ void Database::select (TablesNames const& tNames, TableColumnPairs const& tcPair
         tables_columns_check (tcPairs);
         ofstream select (file_name ("select", tNames));
 
-        auto it = CartesianIterator (*this, tNames);
+        auto it = CartesianIterator (*this, tNames, TMode::reading);
         print_file_head (select, tcPairs);
         print_file_rows (select, it, tcPairs);
 
@@ -116,7 +116,7 @@ void Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPair
         tables_columns_check (tcPairs);
         ofstream filter (file_name ("filter", tNames));
 
-        auto it = IteratorWithCondition (*this, tNames, condition);
+        auto it = IteratorWithCondition (*this, tNames, condition, TMode::reading);
         print_file_head (filter, tcPairs);
         print_file_rows (filter, it, tcPairs);
 

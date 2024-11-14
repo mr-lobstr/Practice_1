@@ -2,16 +2,11 @@
 #define DATABASE_H_GUARD
 
 #include <string>
+#include "database_fwd.h"
 #include "iterator_with_condition.h"
 #include "../table/table.h"
-#include "../data_struct/binary_tree.h"
 #include "../data_struct/hash_table.h"
 
-namespace ds = data_struct;
-
-using Condition = ds::BinTree<std::string>;
-using TableColumn = ds::Pair<StringView, StringView>;
-using TableColumnPairs = ds::DynamicArray<TableColumn>;
 
 class Database {
     friend Table;
