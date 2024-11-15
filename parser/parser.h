@@ -4,15 +4,9 @@
 #include <string>
 #include "conditions_parser.h"
 #include "request.h"
-#include "../data_struct/hash_set.h"
+#include "../database/database_fwd.h"
 #include "../data_struct/dynamic_array.h"
-#include "../data_struct/string_view.h"
 
-namespace ds = data_struct;
-
-using TableColumn = ds::Pair<StringView, StringView>;
-using TableColumnPairs = ds::DynamicArray<TableColumn>;
-using TablesNames = ds::DynamicArray<std::string>;
 
 class Parser {
     using Tokens = ds::DynamicArray<StringView>;
@@ -21,14 +15,14 @@ class Parser {
 
 public:
     void give_str (std::string s);
-    Request* parse();
+    RequestPtr parse();
 
 private:
     void tokenize();
 
-    Request* insert_parse();
-    Request* delete_parse();
-    Request* select_parse();
+    RequestPtr insert_parse();
+    RequestPtr delete_parse();
+    RequestPtr select_parse();
 
     TablesNames from_parse();
     Conditions where_parse();

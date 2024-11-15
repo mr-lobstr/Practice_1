@@ -7,6 +7,10 @@
 #include "table_state.h"
 #include "../data_struct/hash_table.h"
 
+struct TConfig {
+    TableName name;
+    ds::DynamicArray<Column> columns;
+};
 
 class Table {
     friend TFileManager;
@@ -18,18 +22,13 @@ public:
     using Row = ds::DynamicArray<StringView>;
 
 public:
-    Table (std::string const&, Database const&);
-    
-    void init() const;
+    Table (Database const&, TConfig const&);
 
     bool has_column (std::string const&) const noexcept;
 
     std::size_t rows_limit() const noexcept;
     std::string path_dir() const;
     std::string header() const;
-    
-    template <typename Iter>
-    Table& set_columns (Iter, Iter);
 
     Iterator make_iter (TMode) const;
 
@@ -39,25 +38,13 @@ public:
     void erase (Iterator&);
 
 private:
-    TFileManager fm;
-    TState state;
+    Database const& database;
 
     std::string name{};
     ds::HashTable<Column, ColumnNumb> columns{};
 
-    Database const& database;
+    TFileManager fm;
+    TState state;
 };
-
-
-template <typename Iter>
-Table& Table::set_columns (Iter beg, Iter end) {
-    size_t index = 1;
-
-    algs::for_each (beg, end, [&] (auto& column) {
-        columns.add (column, index++);
-    });
-        
-    return *this;
-}
 
 #endif

@@ -1,0 +1,11 @@
+INSERT INTO xiaomi VALUES ('Poco', '2020', '15', '40', '9')
+INSERT INTO samsung VALUES ('Galaxy-S', '2021', '15', '40', '9')
+
+DELETE FROM samsung WHERE samsung.год_выпуска = '2021' 
+
+SELECT samsung.год_выпуска, xiaomi.год_выпуска FROM samsung, xiaomi
+
+SELECT samsung.год_выпуска FROM samsung
+
+SELECT samsung.линейка, xiaomi.бренд, samsung.год_выпуска, xiaomi.год_выпуска FROM samsung, xiaomi, samsung WHERE samsung.год_выпуска = xiaomi.год_выпуска
+

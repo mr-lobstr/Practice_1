@@ -5,7 +5,19 @@ using namespace std;
 
 TState::TState (Table const& table_)
     : table (table_)
-{}
+{
+    if (table.fm.create_table_dir()) {
+        table.fm.set_position (page, row);
+        table.fm.set_prime_key (pk);
+        table.fm.set_mode (TMode::free);
+    } else {
+        auto [p, r] = table.fm.get_position();
+        set_position (p, r);
+        
+        pk = table.fm.get_prime_key();
+        mode_ = table.fm.get_mode();
+    }
+}
 
 
 TState::~TState() {
@@ -14,22 +26,6 @@ TState::~TState() {
     } catch (std::runtime_error const& e) {
         std::cerr << e.what();
         std::terminate();
-    }
-}
-
-
-void TState::init() const {
-    if (table.fm.create_table_dir()) {
-        table.fm.set_position (page, row);
-        table.fm.set_prime_key (pk);
-        table.fm.set_mode (TMode::free);
-    } else {
-        auto [p, r] = table.fm.get_position();
-        page = p;
-        row = r;
-
-        pk = table.fm.get_prime_key();
-        mode_ = table.fm.get_mode();
     }
 }
 

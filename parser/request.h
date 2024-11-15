@@ -2,15 +2,15 @@
 #define REQUEST_H_GUARD
 
 #include <string>
+#include <memory>
 #include "../database/database.h"
-
 
 class Request {
 public:
     Request (std::string);
     Request (Request&&) noexcept;
 
-    virtual void execute (Database&) = 0;
+    virtual std::string execute (Database&) = 0;
     virtual ~Request() = default;
 
 protected:
@@ -18,11 +18,14 @@ protected:
 };
 
 
+using RequestPtr = std::unique_ptr<Request>;
+
+
 class InsertRequest: public Request {
     friend class Parser;
 public:
     InsertRequest (std::string);
-    void execute (Database& db) override;
+    std::string execute (Database& db) override;
 
 private:
     std::string tableName{};
@@ -34,7 +37,7 @@ class DeleteRequest: public Request {
     friend class Parser;
 public:
     DeleteRequest (std::string);
-    void execute (Database& db) override;
+    std::string execute (Database& db) override;
 
 private:
     std::string tableName{};
@@ -46,7 +49,7 @@ class SelectRequest: public Request {
     friend class Parser;
 public:
     SelectRequest (std::string);
-    void execute (Database& db) override;
+    std::string execute (Database& db) override;
 
 protected:
     TablesNames tablesNames{};
@@ -58,7 +61,7 @@ class FilterRequest: public SelectRequest {
     friend class Parser;
 public:
     FilterRequest (SelectRequest select);
-    void execute (Database& db) override;
+    std::string execute (Database& db) override;
 
 private:
     Condition condition{};

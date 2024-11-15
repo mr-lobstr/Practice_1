@@ -23,7 +23,6 @@ public:
     void row_writing_start() noexcept;
     void row_writing_finish() noexcept;
     
-    void init() const;
     void sync();
 
     void reading_start();
@@ -34,11 +33,11 @@ public:
 private:
     Table const& table;
 
-    mutable TMode mode_ = TMode::free;
+    TMode mode_ = TMode::free;
 
-    mutable PrimeKey pk = 0;
-    mutable PageNumb page = 1;
-    mutable RowNumb  row = 0;
+    PrimeKey pk = 0;
+    PageNumb page = 1;
+    RowNumb  row = 0;
 
     bool rowWriting = false;
     bool synchronized = true;

@@ -1,27 +1,35 @@
 #include "table.h"
-#include "table_state_guard.h"
 #include "../database/database.h"
 #include "../data_struct/string_view.h"
 
 using namespace std;
 using namespace data_struct;
 
-Table::Table (string const& name_, Database const& db) 
-    : fm (*this)
+
+auto set_columns (DynamicArray<Column> const& columns) {
+    HashTable<Column, ColumnNumb> result;
+    size_t index = 1;
+
+    for (auto& column : columns) {
+        result.add (column, index++);
+    }
+
+    return result;
+}
+
+
+Table::Table (Database const& db, TConfig const& config)
+    : database (db)
+    , name (config.name)
+    , columns (set_columns (config.columns))
+    , fm (*this)
     , state (*this)
-    , name (name_)
-    , database (db)
 {}
 
 
 bool Table::has_column (std::string const& columnName) const noexcept {
     return columns.find (columnName) != columns.end()
         or columnName == name + "_pk";
-}
-
-
-void Table::init() const {
-    state.init();
 }
 
 

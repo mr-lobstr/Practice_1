@@ -75,7 +75,9 @@ public:
     }
 
     StringView get_row_element (Column const& column) const {
-        auto row = split (get_row(), ','); 
+        auto sv = StringView (get_row());
+        sv.shorten_right (1);
+        auto row = split (sv, ','); 
         return table.get_element_from (row, column);
     }
 

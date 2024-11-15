@@ -24,24 +24,27 @@ Database::Database (string const& path_, string const& schemaName)
         auto const& tableName = it.key();
         auto const& columns = it.value();
 
-        auto& table = tables.emplace_add (tableName, tableName, *this)->value;
-        table.set_columns (columns.begin(), columns.end());
-        table.init();
+        tables.emplace_add (tableName, *this, TConfig {
+            tableName
+          , {columns.begin(), columns.end()}
+        });
     }
 }
 
 
-void Database::insert (std::string const& tableName, Table::Row const& row) {
+string Database::insert (std::string const& tableName, Table::Row const& row) {
     try {
         excpetion_if_hasnot_table (tableName);
         tables[tableName].insert_back (row);
     } catch (exception const& re) {
         cerr << "ошибка при выполнении INSERT:\n" << re.what() << endl;
     }
+
+    return "запрос INSERT успешно выполнен\n";
 }
 
 
-void Database::erase (std::string const& tableName, Condition& condition) {
+string Database::erase (std::string const& tableName, Condition& condition) {
     try {
         excpetion_if_hasnot_table (tableName);
 
@@ -54,6 +57,8 @@ void Database::erase (std::string const& tableName, Condition& condition) {
     } catch (exception const& re) {
         cerr << "ошибка при выполнении DELETE:\n" << re.what() << endl;
     }
+
+    return "запрос DELETE успешно выполнен\n";
 }
 
 
@@ -95,7 +100,7 @@ void print_file_rows (ofstream& select, Iter& it, TableColumnPairs const& tcPair
 }
 
 
-void Database::select (TablesNames const& tNames, TableColumnPairs const& tcPairs) {
+string Database::select (TablesNames const& tNames, TableColumnPairs const& tcPairs) {
     try {
         tables_columns_check (tcPairs);
         ofstream select (file_name ("select", tNames));
@@ -108,10 +113,12 @@ void Database::select (TablesNames const& tNames, TableColumnPairs const& tcPair
     } catch (exception const& re) {
         cerr << "ошибка при выполнении SELECT:\n" << re.what() << endl;
     }
+
+    return "результат SELECT записан в " + file_name ("select", tNames) + "\n";
 }
 
 
-void Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPairs, Condition& condition) {
+string Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPairs, Condition& condition) {
     try {
         tables_columns_check (tcPairs);
         ofstream filter (file_name ("filter", tNames));
@@ -124,6 +131,8 @@ void Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPair
     } catch (exception const& re) {
         cerr << "ошибка при выполнении FILTER:\n" << re.what() << endl;
     }
+
+    return "результат FILTER записан в " + file_name ("filter", tNames) + "\n";
 }
 
 

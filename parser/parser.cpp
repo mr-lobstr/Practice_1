@@ -1,4 +1,6 @@
 #include "parser.h"
+#include "../data_struct/string_view.h"
+#include "../data_struct/hash_set.h"
 using namespace std;
 using namespace data_struct;
 
@@ -8,7 +10,7 @@ void Parser::give_str (string s) {
 }
 
 
-Request* Parser::parse() {
+RequestPtr Parser::parse() {
     tokenize();
 
     throw_if (tokens.empty(),
@@ -66,7 +68,7 @@ void Parser::tokenize() {
 }
 
 
-Request* Parser::insert_parse() {
+RequestPtr Parser::insert_parse() {
     auto pReq = new InsertRequest (move (str));
 
     expected_received ("INTO", tokenIt++);
@@ -84,11 +86,11 @@ Request* Parser::insert_parse() {
         }
     }
 
-    return pReq;     
+    return RequestPtr{pReq};
 }
 
 
-Request* Parser::delete_parse() {
+RequestPtr Parser::delete_parse() {
     auto pReq = new DeleteRequest (move (str));;
     auto tablesNames = from_parse();
 
@@ -99,11 +101,11 @@ Request* Parser::delete_parse() {
     pReq->tableName = tablesNames.front();
     pReq->condition = where_parse();
 
-    return pReq;
+    return RequestPtr{pReq};
 }
 
 
-Request* Parser::select_parse() {
+RequestPtr Parser::select_parse() {
     auto pReq = new SelectRequest (move (str));
 
     pReq->tcPairs = select_parse_();
@@ -116,10 +118,10 @@ Request* Parser::select_parse() {
         pFReq->condition = where_parse();
         delete (pReq);
 
-        return pFReq;
+        return RequestPtr{pFReq};
     }
 
-    return pReq;
+    return RequestPtr{pReq};
 }
 
 
@@ -231,13 +233,18 @@ TableColumn Parser::get_table_column (StringView sv) {
 
 
 void Parser::tables_names_check (TableColumnPairs const& tcPairs, TablesNames const& tablesNames) {
-    HashSet<StringView> names (tablesNames.begin(), tablesNames.end());
+    HashSet<StringView> names1 (tablesNames.begin(), tablesNames.end());
+    HashSet<StringView> names2;
 
     for (auto& [tableName, _] : tcPairs) {
-            names.erase (tableName);
+        names2.add (tableName);
     }
 
-    throw_if (not names.empty(),
+    for (auto& name2 : names2) {
+        names1.erase (name2);
+    }
+
+    throw_if (not names1.empty(),
         "имена таблиц в SELECT и в FROM не совпадают\n"
     );
 }

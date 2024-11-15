@@ -16,8 +16,8 @@ InsertRequest::InsertRequest (string str_)
 {}
 
 
-void InsertRequest::execute (Database& db) {
-    db.insert (tableName, row);
+string InsertRequest::execute (Database& db) {
+    return db.insert (tableName, row);
 }
 
 
@@ -26,8 +26,8 @@ DeleteRequest::DeleteRequest (string str_)
 {}
 
 
-void DeleteRequest::execute (Database& db) {
-    db.erase (tableName, condition);
+string DeleteRequest::execute (Database& db) {
+    return db.erase (tableName, condition);
 }
 
 
@@ -36,8 +36,8 @@ SelectRequest::SelectRequest (string str_)
 {}
 
 
-void SelectRequest::execute (Database& db) {
-    db.select (tablesNames, tcPairs);
+string SelectRequest::execute (Database& db) {
+    return db.select (tablesNames, tcPairs);
 }
 
 
@@ -46,6 +46,6 @@ FilterRequest::FilterRequest (SelectRequest select)
 {}
 
 
-void FilterRequest::execute (Database& db) {
-    db.filter (tablesNames, tcPairs, condition);
+string FilterRequest::execute (Database& db) {
+    return db.filter (tablesNames, tcPairs, condition);
 }

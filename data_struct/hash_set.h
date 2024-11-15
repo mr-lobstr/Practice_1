@@ -70,8 +70,9 @@ namespace data_struct
                     it.prevElemIt
                   , tmp.prev_begin()
                 );
+                
+                ++size_;
             }
-            ++size_;
 
             return it;
         }

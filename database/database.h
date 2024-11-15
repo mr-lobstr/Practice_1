@@ -15,10 +15,10 @@ class Database {
 public:
     Database (std::string const&, std::string const&);
 
-    void insert (std::string const&, Table::Row const&);
-    void erase (std::string const&, Condition&);
-    void select (TablesNames const&, TableColumnPairs const&);
-    void filter (TablesNames const&, TableColumnPairs const&, Condition&);
+    std::string insert (std::string const&, Table::Row const&);
+    std::string erase (std::string const&, Condition&);
+    std::string select (TablesNames const&, TableColumnPairs const&);
+    std::string filter (TablesNames const&, TableColumnPairs const&, Condition&);
 
     bool has_table (std::string const&) const noexcept;
 
