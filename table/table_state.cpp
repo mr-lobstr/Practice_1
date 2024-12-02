@@ -10,6 +10,7 @@ TState::TState (Table const& table_)
         table.fm.set_position (page, row);
         table.fm.set_prime_key (pk);
         table.fm.set_mode (TMode::free);
+        table.fm.creat_page (1);
     } else {
         auto [p, r] = table.fm.get_position();
         set_position (p, r);

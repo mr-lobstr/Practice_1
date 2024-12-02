@@ -2,30 +2,30 @@
 #define PARSER_H_GUARD
 
 #include <string>
-#include "conditions_parser.h"
-#include "request.h"
+#include "../database/request_base.h"
 #include "../database/database_fwd.h"
 #include "../data_struct/dynamic_array.h"
 
 
 class Parser {
-    using Tokens = ds::DynamicArray<StringView>;
+    using Tokens = ds::DynamicArray<std::string>;
     using TokenIter = Tokens::const_iterator;
     using TokenIter_ = decltype (std::declval<TokenIter>()++);
 
 public:
     void give_str (std::string s);
-    RequestPtr parse();
+    RequestPtr parse (std::string const&);
 
 private:
-    void tokenize();
+    void tokenize (std::string const&);
 
     RequestPtr insert_parse();
     RequestPtr delete_parse();
     RequestPtr select_parse();
+    RequestPtr add_table_parse();
 
     TablesNames from_parse();
-    Conditions where_parse();
+    Condition where_parse();
     TableColumnPairs select_parse_();
 
 private:
@@ -37,7 +37,6 @@ private:
     void tables_names_check (TableColumnPairs const& tcPairs, TablesNames const& tablesNames);
 
 private:
-    std::string str{};
     Tokens tokens{};
     TokenIter tokenIt{};
 };

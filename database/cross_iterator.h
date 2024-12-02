@@ -7,14 +7,18 @@
 #include "../data_struct/dynamic_array.h"
 
 
-class CartesianIterator {
-    using TableAndIter = ds::Pair<TableName, Table::Iterator>;
+class CrossIterator {
+    struct TCI {
+        TableName table;
+        Table::Iterator iter;
+    };
 
 public:
-    CartesianIterator (Database&, TablesNames const&, TMode);
-    ~CartesianIterator() noexcept;
+    CrossIterator (Database&, TablesNames const&, TableColumnPairs const&);
+    ~CrossIterator() noexcept;
 
     Table::Iterator const& operator[] (Column const&) const;
+    std::string cross() const;
 
     void operator++();
     bool is_end() const noexcept;
@@ -22,7 +26,8 @@ public:
 
 private:
     Database& database;
-    ds::DynamicArray<TableAndIter> tablesIters;
+    TableColumnPairs tcPairs;
+    ds::DynamicArray<TCI> tablesIters;
 
     bool isEnd = false;
 };

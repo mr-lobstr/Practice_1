@@ -8,25 +8,21 @@
 using namespace std;
 using namespace data_struct;
 
+
+// #include "table/iterator_by_rows.cpp"
+// #include "table/file_manager.cpp"
+// #include "table/table.cpp"
+// #include "data_struct/string_view.cpp"
+// #include "table/table_state.cpp"
+// #include "parser/conditions_parser.cpp"
+// #include "parser/parser.cpp"
+// #include "parser/request.cpp"
+// #include "database/cartesian_iterator.cpp"
+// #include "database/iterator_with_condition.cpp" 
+// #include "database/database.cpp"
+
+
 size_t bufSize = 8192;
-
-string execute_request (Database& database, string const& strRequest) {
-    Parser parser;
-    parser.give_str (strRequest);
-    RequestPtr request;
-
-    try {
-        request = parser.parse();
-    } catch (exception const& e) {
-        return "во время разбора запроса возникла ошибка:\n"s + e.what();
-    }
-
-    try {
-        return request->execute(database);
-    } catch (exception const& e) {
-        return e.what();
-    }
-}
 
 void handleClient(int clientSocket, Database& database) {
     char buffer[8192];
@@ -38,7 +34,12 @@ void handleClient(int clientSocket, Database& database) {
             break;
         }
 
-        auto result = execute_request (database, {buffer, bytes});
+        auto result = database.execute_request ({buffer, bytes});
+        auto resultSize = to_string (result.size());
+
+
+        send(clientSocket, resultSize.c_str(), resultSize.size(), 0);
+        bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
         send(clientSocket, result.c_str(), result.size(), 0);
     }
     

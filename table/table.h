@@ -9,7 +9,7 @@
 
 struct TConfig {
     TableName name;
-    ds::DynamicArray<Column> columns;
+    Columns columns;
 };
 
 class Table {
@@ -34,7 +34,7 @@ public:
 
     StringView get_element_from (Row, Column) const;
 
-    void insert_back (Row const&);
+    PrimeKey insert_back (Row const&);
     void erase (Iterator&);
 
 private:

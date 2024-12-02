@@ -8,7 +8,7 @@ void throw_if (bool errorCondition, string const& errorMessage) {
     );
 }
 
-ConditionParser::ConditionParser (DynamicArray<StringView> words_)
+ConditionParser::ConditionParser (DynamicArray<string> words_)
     : words (std::move (words_))
 {
     throw_if (empty(), 
@@ -18,7 +18,7 @@ ConditionParser::ConditionParser (DynamicArray<StringView> words_)
 
 
 template <typename Check>
-string check_and_get_first (DynamicArray<StringView>& words, Check check) {
+string check_and_get_first (DynamicArray<string>& words, Check check) {
     string mess, first = words.front();
     bool condition;
 

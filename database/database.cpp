@@ -1,9 +1,20 @@
 #include <string>
 #include <fstream>
+#include <iostream>
+#include <sstream>
 #include <filesystem>
-#include "database.h"
 #include "../nlohmann/json.hpp"
+
+#include "database.h"
+#include "request.h"
+#include "delete_iterator.h"
+#include "filter_iterator.h"
+
+#include "../table/table.h"
+#include "../parser/parser.h"
+
 using namespace std;
+using namespace std::filesystem;
 using namespace data_struct;
 using namespace nlohmann;
 
@@ -18,121 +29,143 @@ Database::Database (string const& path_, string const& schemaName)
     rowsLimit = resp["tuples_limit"];
     auto const& jTables = resp["structure"];
 
-    filesystem::create_directory (resp["name"]);
+    create_directory (resp["name"]);
 
     for (auto it = jTables.begin(); it != jTables.end(); ++it) {
-        auto const& tableName = it.key();
+        auto const& tName = it.key();
         auto const& columns = it.value();
 
-        tables.emplace_add (tableName, *this, TConfig {
-            tableName
-          , {columns.begin(), columns.end()}
-        });
+        create_table (tName, {columns.begin(), columns.end()});
     }
 }
 
 
-string Database::insert (std::string const& tableName, Table::Row const& row) {
-    try {
-        excpetion_if_hasnot_table (tableName);
-        tables[tableName].insert_back (row);
-    } catch (exception const& re) {
-        cerr << "ошибка при выполнении INSERT:\n" << re.what() << endl;
-    }
-
-    return "запрос INSERT успешно выполнен\n";
+void Database::create_table (TableName const& tName, Columns const& columns) {
+    tables.emplace_add (tName, *this, TConfig {
+        tName
+      , columns
+    });
 }
 
 
-string Database::erase (std::string const& tableName, Condition& condition) {
-    try {
-        excpetion_if_hasnot_table (tableName);
+string Database::execute_request (string const& strRequest) {
+    RequestPtr requestPtr;
 
-        auto it = IteratorWithCondition (*this, {tableName}, condition, TMode::writing);
+    try {
+        requestPtr = Parser{}.parse (strRequest);
+    } catch (exception const& e) {
+        return "Err\nво время разбора запроса возникла ошибка:\n"s + e.what();
+    }
+
+    try {
+        return execute (*requestPtr);
+    } catch (exception const& e) {
+        return "Err\n"s + e.what();
+    }
+}
+
+
+string Database::execute (Request const& request) {
+    switch (request.type)
+    {
+        case Request::Type::AddTable:
+            return add_table (request);
+
+        case Request::Type::Insert:
+            return insert (request);
+
+        case Request::Type::Delete:
+            return erase (request);
+
+        case Request::Type::Select:
+            return select (request);
+    
+        default:
+            break;
+    }
+}
+
+
+string Database::add_table (Request const& request_) {
+    auto& request = dynamic_cast<AddRequest const&> (request_);
+
+    try {
+        create_table (request.tableName, request.columns);
+    } catch (exception const& e) {
+        throw runtime_error (
+            "ошибка при создании таблицы " + request.tableName + ":\n"s + e.what() + "\n"
+        );
+    }
+
+    return "Ok\n";
+}
+
+
+string Database::insert (Request const& request_) {
+    auto& request = dynamic_cast<InsertRequest const&> (request_);
+    PrimeKey pk;
+
+    try {
+        excpetion_if_hasnot_table (request.tableName);
+        pk = tables[request.tableName].insert_back (request.row);
+    } catch (exception const& e) {
+        throw runtime_error (
+            "ошибка при выполнении INSERT:\n"s + e.what() + "\n"
+        );
+    }
+
+    return "Ok\npk:" + to_string (pk);
+}
+
+
+string Database::erase (Request const& request_) {
+    auto& request = dynamic_cast<DeleteRequest const&> (request_);
+
+    try {
+        excpetion_if_hasnot_table (request.tableName);
+
+        auto it = DeleteIterator (*this, request.tableName, request.condition);
 
         while (not it.is_end()) {
-            it[tableName].erase();
-            it.validate();
+            ++it;
         }
-    } catch (exception const& re) {
-        cerr << "ошибка при выполнении DELETE:\n" << re.what() << endl;
+    } catch (exception const& e) {
+        throw runtime_error (
+            "ошибка при выполнении DELETE:\n"s + e.what() + "\n"
+        );
     }
 
-    return "запрос DELETE успешно выполнен\n";
+    return "Ok";
 }
 
 
-std::string file_name (string name, TablesNames const& tNames) {
-    for (auto& tName : tNames) {
-        name += "_" + tName;
-    }
-    
-    name +=".txt";
-    return name;
-}
+string Database::select (Request const& request_) {
+    auto& request = dynamic_cast<SelectRequest const&> (request_);
+    string result = "Ok\n";
 
+    try {
+        tables_columns_check (request.tcPairs);
+        auto it = FilterIterator (*this, request.tablesNames, request.tcPairs, request.condition);
 
-void print_file_head (ofstream& select, TableColumnPairs const& tcPairs) {
-    bool isFirst = true;
+        bool intoString = request.outTable.empty();
 
-    for (auto& [_, columnName] : tcPairs) {
-        select << (isFirst ? "" : ", ") << columnName;
-        isFirst = false;
-    }
-
-    select << endl;
-}
-
-
-template <typename Iter>
-void print_file_rows (ofstream& select, Iter& it, TableColumnPairs const& tcPairs) {
-    while (not it.is_end()) {
-        bool isFirst = true;
-
-        for (auto& [tableName, columnName] : tcPairs) {
-            select << (isFirst ? "" : ", ") << it[tableName][columnName];
-            isFirst = false;
+        for (; not it.is_end(); ++it) {
+            if (intoString) {
+                result += it.cross() + "\n";
+            } else {
+                InsertRequest req;
+                req.tableName = request.outTable;
+                req.row = split (it.cross(), ',');
+                insert (req);
+            }
         }
-        
-        select << endl;
-        ++it;
-    }
-}
-
-
-string Database::select (TablesNames const& tNames, TableColumnPairs const& tcPairs) {
-    try {
-        tables_columns_check (tcPairs);
-        ofstream select (file_name ("select", tNames));
-
-        auto it = CartesianIterator (*this, tNames, TMode::reading);
-        print_file_head (select, tcPairs);
-        print_file_rows (select, it, tcPairs);
-
-        select.close();
-    } catch (exception const& re) {
-        cerr << "ошибка при выполнении SELECT:\n" << re.what() << endl;
+    } catch (exception const& e) {
+        throw runtime_error (
+            "ошибка при выполнении SELECT:\n"s + e.what() + "\n"
+        );
     }
 
-    return "результат SELECT записан в " + file_name ("select", tNames) + "\n";
-}
-
-
-string Database::filter (TablesNames const& tNames, TableColumnPairs const& tcPairs, Condition& condition) {
-    try {
-        tables_columns_check (tcPairs);
-        ofstream filter (file_name ("filter", tNames));
-
-        auto it = IteratorWithCondition (*this, tNames, condition, TMode::reading);
-        print_file_head (filter, tcPairs);
-        print_file_rows (filter, it, tcPairs);
-
-        filter.close();
-    } catch (exception const& re) {
-        cerr << "ошибка при выполнении FILTER:\n" << re.what() << endl;
-    }
-
-    return "результат FILTER записан в " + file_name ("filter", tNames) + "\n";
+    return result;
 }
 
 
@@ -154,7 +187,7 @@ void Database::tables_columns_check (TableColumnPairs const& tcPairs) {
 
         if (not tables[tableName].has_column (columnName)) {
             throw invalid_argument (
-                "таблица \'" + tableName + "\' не содержит колонку \'" + tableName + "\'\n"
+                "таблица \'" + tableName + "\' не содержит колонку \'" + columnName + "\'\n"
             );
         }
     }

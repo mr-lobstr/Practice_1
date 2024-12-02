@@ -44,7 +44,7 @@ namespace data_struct
 
         Self& operator= (Self&& rhs)
         {
-            if (this == &rhs) {
+            if (this != &rhs) {
                 auto tmp {std::move (rhs)};
                 swap (tmp);
             }
@@ -53,7 +53,7 @@ namespace data_struct
 
         Self& operator= (Self const& rhs)
         {
-            if (this == &rhs) {
+            if (this != &rhs) {
                 auto tmp {rhs};
                 swap (tmp);
             }
@@ -81,7 +81,7 @@ namespace data_struct
         }
 
         auto cbegin() const noexcept {
-            return make_begin_iter();
+            return const_iterator {make_begin_iter()};
         }
 
         auto begin() const noexcept {
@@ -112,6 +112,21 @@ namespace data_struct
             }
 
             return false;
+        }
+
+        bool equal (Self const& rhs) const {
+            if (size() != rhs.size())
+                return false;
+
+            for (auto& el : *this) {
+                auto ref = const_cast<Self&> (rhs);
+                auto it = ref.find_element (el);
+
+                if (it == rhs.end())
+                    return false;
+            }
+
+            return true;
         }
     
     private:
@@ -176,8 +191,9 @@ namespace data_struct
 
     protected:
         bool equal (IterImpl const& rhs) const noexcept {
-            if (is_end() or rhs.is_end())
+            if (is_end() or rhs.is_end()) {
                 return is_end() and rhs.is_end();
+            }
                 
             return prevElemIt == rhs.prevElemIt;
         }

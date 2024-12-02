@@ -20,6 +20,16 @@ namespace iter
     Iter next_iter (Iter it) noexcept {
         return ++it;
     }
+
+
+    template <typename Iter>
+    Iter advance (Iter it, size_t n) noexcept {
+        while (n--) {
+            ++it;
+        }
+
+        return it;
+    }
 }
 
 #endif

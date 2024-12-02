@@ -70,6 +70,16 @@ namespace data_struct
             }
         }
 
+        friend
+        bool operator== (FList const& lhs, FList const& rhs) noexcept {
+            return algs::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+        }
+
+        friend
+        bool operator!= (FList const& lhs, FList const& rhs) noexcept {
+            return not (lhs == rhs);
+        }
+
         bool empty() const noexcept {
             return prevFirst.next == nullptr;
         }

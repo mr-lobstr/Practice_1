@@ -14,65 +14,94 @@ namespace data_struct
         using const_iterator = typename DynamicArray<T>::const_iterator;
 
     public:
+        Stack() noexcept = default;
+
+        template <class Iter, class = iter::EnableIfForward<Iter>>
+        Stack (Iter beg, Iter end)
+            : impl (beg, end)
+        {}
+
+        Stack (std::initializer_list<T> iList)
+            : impl (iList)
+        {}
+
+        Stack (std::size_t count, T const& value = T())
+            : impl (count, value)
+        {}
+
+        friend
+        bool operator== (Stack const& lhs, Stack const& rhs) noexcept {
+            return lhs.impl == rhs.impl;
+        }
+
+        friend
+        bool operator!= (Stack const& lhs, Stack const& rhs) noexcept {
+            return not (lhs == rhs);
+        }
+
         auto begin() const noexcept {
-            return stackImpl.cbegin();
+            return impl.cbegin();
         }
 
         auto end() const noexcept {
-            return stackImpl.cend();
+            return impl.cend();
         }
 
         auto cbegin() const noexcept {
-            return stackImpl.cbegin();
+            return impl.cbegin();
         }
 
         auto cend() const noexcept {
-            return stackImpl.cend();
+            return impl.cend();
         }
 
         template <typename... Ts>
         void emplace (Ts&&... params) {
-            stackImpl.emplace_back (std::forward<Ts> (params)...);
+            impl.emplace_back (std::forward<Ts> (params)...);
         }
 
         void push (T const& value) {
-            stackImpl.push_back (value);
+            impl.push_back (value);
         }
 
         void push (T&& value) {
-            stackImpl.push_back (std::move (value));
+            impl.push_back (std::move (value));
         }
 
         T const& top() const noexcept {
-            return stackImpl.back();
+            return impl.back();
         }
 
         T& top() noexcept {
-            return stackImpl.back();
+            return impl.back();
         }
 
         void pop() noexcept {
-            stackImpl.pop_back();
+            impl.pop_back();
         }
 
         bool empty() const noexcept {
-            return stackImpl.empty();
+            return impl.empty();
         }
 
         std::size_t size() const noexcept {
-            return stackImpl.size();
+            return impl.size();
         }
 
         std::size_t capacity() const noexcept {
-            return stackImpl.capacity();
+            return impl.capacity();
         }
 
         void reserve (std::size_t newCapacity) {
-            stackImpl.reserve (newCapacity);
+            impl.reserve (newCapacity);
+        }
+
+        void swap (Stack& rhs) noexcept {
+            impl.swap (rhs.impl);
         }
 
     private:
-        DynamicArray<T> stackImpl;
+        DynamicArray<T> impl;
     };
 
 

@@ -120,6 +120,19 @@ namespace algs
 
         return cnt;
     }
+
+
+    template <typename It, typename It2>
+    bool equal (It b1, It e1, It2 b2, It2 e2) {
+        while (b1 != e1 and b2 != e2) {
+            if (*b1 != *b2)
+                return false;
+            ++b1;
+            ++b2;
+        }
+
+        return b1 == e1 and b2 == e2;
+    }
 }
 
 #endif

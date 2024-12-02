@@ -1,11 +1,11 @@
-#include "iterator_with_condition.h"
+#include "filter_iterator.h"
 using namespace std;
 using namespace data_struct;
 
-using IWC = IteratorWithCondition;
+using IWC = FilterIterator;
 
-IWC::IteratorWithCondition (Database& db, DynamicArray<string> const& tablesNames, Condition& cond, TMode mode)
-    : iter (db, tablesNames, mode)
+IWC::FilterIterator (Database& db, TablesNames const& tNames, TableColumnPairs const& tcPairs, Condition const& cond)
+    : iter (db, tNames, tcPairs)
     , condition (cond)
 {
     validate();
@@ -14,6 +14,11 @@ IWC::IteratorWithCondition (Database& db, DynamicArray<string> const& tablesName
 
 Table::Iterator const& IWC::operator[] (string const& tableName) const {
     return iter[tableName];
+}
+
+
+string IWC::cross() const {
+    return iter.cross();
 }
 
 
@@ -34,7 +39,7 @@ void IWC::reset() noexcept {
 
 
 void IWC::validate () {
-    while (not is_end() and  not condition_fulfilled()) {
+    while (not is_end() and not condition_fulfilled()) {
         ++iter;
     }
 }
@@ -78,5 +83,9 @@ bool IWC::compute_condition (OperIt operIt) const {
 
 
 bool IWC::condition_fulfilled() const {
+    if (condition.empty()) {
+        return true;
+    }
+
     return compute_condition (condition.root());
 } 

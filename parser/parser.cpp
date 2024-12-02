@@ -1,17 +1,14 @@
 #include "parser.h"
+#include "conditions_parser.h"
+#include "../database/request.h"
 #include "../data_struct/string_view.h"
 #include "../data_struct/hash_set.h"
 using namespace std;
 using namespace data_struct;
 
 
-void Parser::give_str (string s) {
-    str = move (s);
-}
-
-
-RequestPtr Parser::parse() {
-    tokenize();
+RequestPtr Parser::parse (string const& strRequest) {
+    tokenize (strRequest);
 
     throw_if (tokens.empty(),
         "невозможно разобрать пустое выражение\n"
@@ -25,6 +22,8 @@ RequestPtr Parser::parse() {
         return delete_parse();
     } else if (first == "SELECT"s) {
         return select_parse();
+    } else if (first == "ADD"s) {
+        return add_table_parse();
     } else {
         throw_if (true,
             "неизвестная команда: " + first + "\n"
@@ -33,7 +32,7 @@ RequestPtr Parser::parse() {
 }
 
 
-void Parser::tokenize() {
+void Parser::tokenize (string const& str) {
     tokens.resize(0);
 
     for (auto beg = str.begin(); beg != str.end(); ++beg) {       
@@ -69,7 +68,7 @@ void Parser::tokenize() {
 
 
 RequestPtr Parser::insert_parse() {
-    auto pReq = new InsertRequest (move (str));
+    auto pReq = new InsertRequest;
 
     expected_received ("INTO", tokenIt++);
     pReq->tableName =  *tokenIt++;
@@ -91,7 +90,7 @@ RequestPtr Parser::insert_parse() {
 
 
 RequestPtr Parser::delete_parse() {
-    auto pReq = new DeleteRequest (move (str));;
+    auto pReq = new DeleteRequest;
     auto tablesNames = from_parse();
 
     throw_if (tablesNames.size() != 1,
@@ -106,19 +105,44 @@ RequestPtr Parser::delete_parse() {
 
 
 RequestPtr Parser::select_parse() {
-    auto pReq = new SelectRequest (move (str));
+    auto pReq = new SelectRequest;
 
     pReq->tcPairs = select_parse_();
     pReq->tablesNames = from_parse();
 
+    if (tokenIt != tokens.end() and *tokenIt == "INTO"s) {
+        throw_if (++tokenIt == tokens.cend(),
+            "выражение неполное: ожидалось имя таблицы\n"
+        );
+
+        pReq->outTable = *tokenIt++;
+    }
+
     tables_names_check (pReq->tcPairs, pReq->tablesNames);
 
     if (tokenIt != tokens.end()) {
-        auto pFReq = new FilterRequest (move (*pReq));
-        pFReq->condition = where_parse();
-        delete (pReq);
+        pReq->condition = where_parse();
+    }
 
-        return RequestPtr{pFReq};
+    return RequestPtr{pReq};
+}
+
+
+RequestPtr Parser::add_table_parse() {
+    auto pReq = new AddRequest;
+
+    expected_received ("TABLE", tokenIt++);
+    pReq->tableName =  *tokenIt++;
+
+    expected_received ("COLUMNS", tokenIt++);
+
+    while (tokenIt != tokens.cend()) {
+        pReq->columns.push_back (*tokenIt++);
+
+        if (tokenIt != tokens.cend()) {
+            expected_received (",", tokenIt);
+            ++tokenIt;
+        }
     }
 
     return RequestPtr{pReq};
@@ -127,7 +151,9 @@ RequestPtr Parser::select_parse() {
 
 TablesNames Parser::from_parse() {
     auto isEnd = [this] {
-        return tokenIt == tokens.cend() or *tokenIt == "WHERE"s;
+        return tokenIt == tokens.cend()
+            or *tokenIt == "WHERE"s
+            or *tokenIt == "INTO"s;
     };
 
     TablesNames tablesNames;
@@ -217,7 +243,7 @@ StringView Parser::get_value (StringView value) {
 
 TableColumn Parser::get_table_column (StringView sv) {
     throw_if (algs::count (sv.begin(), sv.end(), '.') != 1,
-        "имя таблицы и колонки должны быть разделены одной точкой\n"
+        "имя таблицы и колонки (" + sv +") должны быть разделены одной точкой\n"
     );
 
     auto pointIt = algs::find (sv.begin(), sv.end(), '.');

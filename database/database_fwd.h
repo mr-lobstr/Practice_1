@@ -3,8 +3,8 @@
 
 #include "../table/table_fwd.h"
 
-
-class CartesianIterator;
-class IteratorWithCondition;
+class DeleteIterator;
+class CrossIterator;
+class FilterIterator;
 
 #endif

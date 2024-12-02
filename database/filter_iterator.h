@@ -3,16 +3,16 @@
 
 #include <string>
 #include "database_fwd.h"
-#include "cartesian_iterator.h"
+#include "cross_iterator.h"
 #include "../data_struct/binary_tree.h"
 
 
-
-class IteratorWithCondition {
+class FilterIterator {
 public:
-    IteratorWithCondition (Database&, TablesNames const&, Condition&, TMode);
+    FilterIterator (Database&, TablesNames const&, TableColumnPairs const&, Condition const&);
 
     Table::Iterator const& operator[] (std::string const&) const;
+    std::string cross() const;
 
     void operator++();
     void validate ();
@@ -28,8 +28,8 @@ private:
     bool equal (OperIt) const;
 
 private:
-    CartesianIterator iter;
-    Condition& condition;
+    CrossIterator iter;
+    Condition condition;
 };
 
 #endif

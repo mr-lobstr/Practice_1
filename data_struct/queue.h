@@ -14,6 +14,30 @@ namespace data_struct
         using const_iterator = typename List<T>::const_iterator;
 
     public:
+        Queue() noexcept = default;
+
+        template <class Iter, class = iter::EnableIfForward<Iter>>
+        Queue (Iter beg, Iter end)
+            : impl (beg, end)
+        {}
+
+        Queue (std::initializer_list<T> iList)
+            : impl (iList)
+        {}
+
+        Queue (std::size_t count, T const& value = T())
+            : impl (count, value)
+        {}
+
+        friend
+        bool operator== (Queue const& lhs, Queue const& rhs) noexcept {
+            return lhs.impl == rhs.impl;
+        }
+
+        friend
+        bool operator!= (Queue const& lhs, Queue const& rhs) noexcept {
+            return not (lhs == rhs);
+        }
         auto begin() const noexcept {
             return impl.cbegin();
         }
@@ -28,6 +52,10 @@ namespace data_struct
 
         auto cend() const noexcept {
             return impl.cend();
+        }
+
+        bool empty() const noexcept {
+            return impl.empty();
         }
 
         std::size_t size() const noexcept {

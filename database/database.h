@@ -3,26 +3,33 @@
 
 #include <string>
 #include "database_fwd.h"
-#include "iterator_with_condition.h"
+#include "request_base.h"
 #include "../table/table.h"
 #include "../data_struct/hash_table.h"
 
 
 class Database {
     friend Table;
-    friend class CartesianIterator;
+    friend class CrossIterator;
+    friend class DeleteIterator;
 
 public:
     Database (std::string const&, std::string const&);
 
-    std::string insert (std::string const&, Table::Row const&);
-    std::string erase (std::string const&, Condition&);
-    std::string select (TablesNames const&, TableColumnPairs const&);
-    std::string filter (TablesNames const&, TableColumnPairs const&, Condition&);
-
     bool has_table (std::string const&) const noexcept;
 
+    std::string execute_request (std::string const&);
+
 private:
+    void create_table (TableName const&, Columns const&);
+
+    std::string execute (Request const&);
+
+    std::string add_table (Request const&);
+    std::string insert (Request const&);
+    std::string erase (Request const&);
+    std::string select (Request const&);
+
     void excpetion_if_hasnot_table (std::string const&) const;
 
     void tables_columns_check (TableColumnPairs const&);

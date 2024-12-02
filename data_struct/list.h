@@ -73,6 +73,16 @@ namespace data_struct
             erase (begin(), end());
         }
 
+        friend
+        bool operator== (List const& lhs, List const& rhs) noexcept {
+            return algs::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+        }
+
+        friend
+        bool operator!= (List const& lhs, List const& rhs) noexcept {
+            return not (lhs == rhs);
+        }
+
         std::size_t size() const noexcept {
             return size_;
         }

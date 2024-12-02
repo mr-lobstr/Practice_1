@@ -38,7 +38,7 @@ Table::Iterator Table::make_iter (TMode mode) const {
 }
 
 
-void Table::insert_back (Row const& row) {
+PrimeKey Table::insert_back (Row const& row) {
     TStateGuard guard (state, TMode::writing);
 
     auto expected = columns.size();
@@ -55,6 +55,8 @@ void Table::insert_back (Row const& row) {
     });
 
     state.row_writing_finish();
+
+    return state.current_pk();
 }
 
 

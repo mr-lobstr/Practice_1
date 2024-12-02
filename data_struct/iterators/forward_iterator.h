@@ -80,7 +80,7 @@ namespace iter
         ForwardIterator<T, Impl, Mutable_tag>
     > {
         using Category   = std::forward_iterator_tag;
-        using Difference = void;
+        using Difference = std::ptrdiff_t;
 
         using Value     = T;
         using Reference = T&;
@@ -93,7 +93,7 @@ namespace iter
         ForwardIterator<T, Impl, Const_tag>
     > {
         using Category   = std::forward_iterator_tag;
-        using Difference = void;
+        using Difference = std::ptrdiff_t;
 
         using Value     = T;
         using Reference = T const&;

@@ -37,6 +37,7 @@ namespace data_struct
     private:
         using typename Base::Bucket;
         using Base::rehash_before_add;
+        using Base::equal;
 
         using Base::hash;
         using Base::buckets;
@@ -53,6 +54,16 @@ namespace data_struct
         HashSet (std::initializer_list<T> initList) 
             : HashSet (initList.begin(), initList.end())
         {}
+
+        friend
+        bool operator== (HashSet const& lhs, HashSet const& rhs) noexcept {
+            return lhs.equal (rhs);
+        }
+
+        friend
+        bool operator!= (HashSet const& lhs, HashSet const& rhs) noexcept {
+            return not (lhs == rhs);
+        }
 
         template <typename... Args>
         iterator emplace_add (Args&&... args) {

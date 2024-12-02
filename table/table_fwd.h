@@ -27,10 +27,11 @@ using PageNumb = std::size_t;
 using ColumnNumb = std::size_t;
 
 using Column = std::string;
+using Columns = ds::DynamicArray<Column>;
 using TableName = std::string;
 
 using TablesNames = ds::DynamicArray<TableName>;
-using TableColumn = ds::Pair<StringView, StringView>;
+using TableColumn = ds::Pair<TableName, Column>;
 using TableColumnPairs = ds::DynamicArray<TableColumn>;
 
 using Condition = ds::BinTree<std::string>;

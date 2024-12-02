@@ -77,6 +77,17 @@ namespace data_struct
             mem_free (begin_);
         }
 
+
+        friend
+        bool operator== (DynamicArray const& lhs, DynamicArray const& rhs) noexcept {
+            return algs::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+        }
+
+        friend
+        bool operator!= (DynamicArray const& lhs, DynamicArray const& rhs) noexcept {
+            return not (lhs == rhs);
+        }
+
         auto begin() noexcept {
             return iterator {begin_};
         }
@@ -239,7 +250,7 @@ namespace data_struct
         }
 
         void reserve_before_insert () {
-            auto memSize = empty() ? minCapacity : size() * 2;
+            auto memSize = empty() ? 1 : size() * 2;
             realloc_if_capacity_less (size() + 1, memSize);
         }
 
@@ -249,9 +260,6 @@ namespace data_struct
         }
 
     private:
-        static const
-        std::size_t minCapacity = 100;
-
         std::size_t capacity_ = 0;
 
         T* begin_ = nullptr;

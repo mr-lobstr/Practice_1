@@ -5,6 +5,7 @@
 #include "hash_container_base.h"
 #include "default_hesh.h"
 #include "iterators.h"
+#include "my_utility.h"
 
 
 namespace data_struct
@@ -13,10 +14,15 @@ namespace data_struct
     struct KeyValue {
         KeyValue() = default;
 
+        KeyValue (Pair<Key, Value> kv)
+            : key (kv.first)
+            , value (kv.second)
+        {}
+
         template <
             typename KEY
           , typename = std::enable_if_t<
-                std::is_convertible_v<KEY, Key>
+                std::is_constructible<Key, KEY>::value
             >
           , typename... Args
         >
@@ -58,6 +64,7 @@ namespace data_struct
     
     private:
         using Base::rehash_before_add;
+        using Base::equal;
 
         using Base::hash;
         using Base::buckets;
@@ -75,10 +82,21 @@ namespace data_struct
             : HashTable (initList.begin(), initList.end())
         {}
 
+        friend
+        bool operator== (HashTable const& lhs, HashTable const& rhs) noexcept {
+            return lhs.equal (rhs);
+        }
+
+        friend
+        bool operator!= (HashTable const& lhs, HashTable const& rhs) noexcept {
+            return not (lhs == rhs);
+        }
+
+
         template <
             typename KEY
           , typename = std::enable_if_t<
-                std::is_convertible_v<KEY, Key>
+                std::is_constructible<Key, KEY>::value
             >
           , typename... Args
         >
@@ -95,8 +113,9 @@ namespace data_struct
                   , std::forward<KEY> (key)
                   , std::forward<Args> (args)...
                 );
+    
+                ++size_;
             }
-            ++size_;
 
             return it;
         }

@@ -11,7 +11,7 @@ using Conditions = ds::BinTree<std::string>;
 class ConditionParser {
 public: 
     explicit
-    ConditionParser (ds::DynamicArray<StringView>);
+    ConditionParser (ds::DynamicArray<std::string>);
 
     Conditions get_condition();
     bool empty() const noexcept;
@@ -25,7 +25,7 @@ private:
     int priority (std::string const&) const noexcept;
 
 private:
-    ds::DynamicArray<StringView> words;
+    ds::DynamicArray<std::string> words;
 };
 
 void throw_if (bool, std::string const&); 
