@@ -204,7 +204,8 @@ TableColumnPairs Parser::select_parse_() {
 bool Parser::is_special (char c) const noexcept{
     return c == '('
         or c == ')'
-        or c == ',';
+        or c == ','
+        or c == '=';
 }
 
 
@@ -226,9 +227,9 @@ void Parser::expected_received (string const& exp, TokenIter_ it) {
 
 StringView Parser::get_value (StringView value) {
     if (value.front() == '\'' and value.back() == '\'') {
-        throw_if (algs::count (value.begin(), value.end(), ' ') != 0,
-            "значение " + value + " содержит пробелы\n"
-        );
+        // throw_if (algs::count (value.begin(), value.end(), ' ') != 0,
+        //     "значение " + value + " содержит пробелы\n"
+        // );
 
         value.shorten_left (1);
         value.shorten_right (1);

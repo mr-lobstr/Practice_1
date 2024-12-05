@@ -2,8 +2,12 @@
     "name": "Склад",
     "tuples_limit": 100,
     "structure": {
+        "state":[
+            "is_init",
+            "default_quantity"
+        ],
         "user": [
-            "username",            
+            "name",            
             "key"
         ],
         "user_lot": [
@@ -20,8 +24,8 @@
             "closed"
         ],
         "pair": [
-            "first_lot_id",
-            "second_lot_id"
+            "sale_lot_id",
+            "buy_lot_id"
         ],
         "lot": [
             "name"

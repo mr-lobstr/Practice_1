@@ -24,7 +24,7 @@ private:
 
     bool condition_fulfilled() const;
     bool compute_condition (OperIt) const;
-    StringView get_operand (StringView) const noexcept;
+    StringView get_operand (StringView) const;
     bool equal (OperIt) const;
 
 private:

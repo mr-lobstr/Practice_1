@@ -41,6 +41,8 @@ public:
         send(socket_, "Ok", 2, 0);
         received = recv(socket_, buff, size, 0);
 
+        cout << size << " " <<(int) buff[size-1] << endl;
+
         return {buff, received};
     }
 

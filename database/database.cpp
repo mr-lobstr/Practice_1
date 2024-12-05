@@ -1,7 +1,3 @@
-#include <string>
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include <filesystem>
 #include "../nlohmann/json.hpp"
 
@@ -50,9 +46,10 @@ void Database::create_table (TableName const& tName, Columns const& columns) {
 
 string Database::execute_request (string const& strRequest) {
     RequestPtr requestPtr;
+    Parser parser;
 
     try {
-        requestPtr = Parser{}.parse (strRequest);
+        requestPtr = parser.parse (strRequest);
     } catch (exception const& e) {
         return "Err\nво время разбора запроса возникла ошибка:\n"s + e.what();
     }
@@ -100,6 +97,7 @@ string Database::add_table (Request const& request_) {
     return "Ok\n";
 }
 
+#include <iostream>
 
 string Database::insert (Request const& request_) {
     auto& request = dynamic_cast<InsertRequest const&> (request_);
@@ -114,7 +112,7 @@ string Database::insert (Request const& request_) {
         );
     }
 
-    return "Ok\npk:" + to_string (pk);
+    return "Ok\n" + to_string (pk);
 }
 
 
@@ -135,7 +133,7 @@ string Database::erase (Request const& request_) {
         );
     }
 
-    return "Ok";
+    return "Ok\n";
 }
 
 

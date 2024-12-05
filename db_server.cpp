@@ -3,26 +3,15 @@
 #include <unistd.h>
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <mutex>
 #include "database/database.h"
 #include "parser/parser.h"
 using namespace std;
 using namespace data_struct;
 
-
-// #include "table/iterator_by_rows.cpp"
-// #include "table/file_manager.cpp"
-// #include "table/table.cpp"
-// #include "data_struct/string_view.cpp"
-// #include "table/table_state.cpp"
-// #include "parser/conditions_parser.cpp"
-// #include "parser/parser.cpp"
-// #include "parser/request.cpp"
-// #include "database/cartesian_iterator.cpp"
-// #include "database/iterator_with_condition.cpp" 
-// #include "database/database.cpp"
-
-
-size_t bufSize = 8192;
+mutex mtx;
+ofstream logFile ("server_log.txt");
 
 void handleClient(int clientSocket, Database& database) {
     char buffer[8192];
@@ -34,20 +23,39 @@ void handleClient(int clientSocket, Database& database) {
             break;
         }
 
-        auto result = database.execute_request ({buffer, bytes});
-        auto resultSize = to_string (result.size());
+        {
+            lock_guard<mutex> lock (mtx);
+            logFile << "client request: " << StringView (buffer, bytes) << endl;
+        }
 
+        auto responce = database.execute_request ({buffer, bytes});
+        auto size = to_string (responce.size());
 
-        send(clientSocket, resultSize.c_str(), resultSize.size(), 0);
+        {
+            lock_guard<mutex> lock (mtx);
+            logFile << "server responce: " << responce << endl;
+        }
+
+        send(clientSocket, size.c_str(), size.size(), 0);
         bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
-        send(clientSocket, result.c_str(), result.size(), 0);
+        send(clientSocket, responce.c_str(), responce.size(), 0);
     }
     
     close(clientSocket);
 }
 
 
-int main() {
+int main (int argc, char** argv) {
+    string pathDir, pathSchema;
+
+    if (argc < 3) {
+        pathDir = "./";
+        pathSchema = "schema.json";
+    } else {
+        pathDir = argv[1];
+        pathSchema = argv[2];
+    }
+
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
@@ -59,7 +67,7 @@ int main() {
 
     cout << "Server start\n";
 
-    Database database("./", "schema.json");
+    Database database(pathDir, pathSchema);
 
     while (true) {
         int clientSocket = accept(serverSocket, nullptr, nullptr);    

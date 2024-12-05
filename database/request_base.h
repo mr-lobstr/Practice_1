@@ -18,8 +18,6 @@ public:
         : type (type_)
     {}
 
-    Request (Request&&) noexcept;
-
     virtual ~Request() = default;
 
 public:
@@ -27,6 +25,7 @@ public:
 };
 
 
-using RequestPtr = std::unique_ptr<Request>;
+// using RequestPtr = std::unique_ptr<Request>;
+using RequestPtr = Request*;
 
 #endif

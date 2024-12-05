@@ -17,7 +17,6 @@ DI::DeleteIterator (Database& db, TableName const& tName, Condition const& cond)
 
 
 void DI::operator++() {
-   ++iter;
     validate();
     del();
 }

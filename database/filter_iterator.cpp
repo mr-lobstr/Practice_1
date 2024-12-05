@@ -45,7 +45,7 @@ void IWC::validate () {
 }
 
 
-StringView IWC::get_operand (StringView sv) const noexcept {
+StringView IWC::get_operand (StringView sv) const {
     if (sv.front() == '\'') {
         sv.shorten_left (1);
         sv.shorten_right (1);
