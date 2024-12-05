@@ -5,15 +5,11 @@
 #include <map>
 #include <vector>
 #include "db_client.h"
+#include "crypto_elements.h"
 
 
 class Crypto {
 public:
-    struct Lot;
-    struct Pair;
-    struct User;
-    struct UserLot;
-    struct Order;
     using Balance = std::map<int, double>;
 
 public:
@@ -21,45 +17,32 @@ public:
 
     std::string post_user (std::string const&);
     int post_order (std::string const&, Order const&);
-
-    std::vector<Lot> get_lots();
-    std::vector<Pair> get_pairs();
-    Balance get_balance (std::string const&);
-
     void delete_order (std::string const&, int);
 
+    Balance get_balance (std::string const&);
+
 public:
-    template <typename... Args>
-    std::string db_request (std::string const&, Args&&...);
+    template <typename T> std::vector<T> get_all();
 
-    template <typename... Args>
-    std::vector<Order> get_orders_where (std::string const&, Args&&...);
+private:
+    std::string db_request (std::string const&);
 
-    template <typename... Args>
-    std::vector<Lot> get_lots_where (std::string const&, Args&&...);
+    template <typename T, typename... Args> int add (Args&&...);
+    template <typename T> std::vector<T> get_parse (std::string const&);
+    template <typename T> T get_one (std::string const&);
 
-    template <typename... Args>
-    std::vector<UserLot> get_user_lots_where (std::string const&, Args&&...);
-
-    template <typename... Args>
-    User get_user_where (std::string const&, Args&&...);
-
+private:
     bool is_init();
     void init (std::vector<std::string> const&);
 
-    std::string add_lot (std::string const&);
-    std::string add_user_lot (int, int, double);
-
-    Pair get_pair (int);
-
     void change_balance (int, int, double);
 
+    int create_order (Order const&);
     int deal (Order&, Order&);
-
-    int add_order (Order const&);
     int closed_order (Order const&);
     void delete_order (Order const&);
 
+private:
     int user_verification (std::string const&);
     void check_repeat_username (std::string const&);
     void check_change_quantity (double, UserLot const&);
@@ -68,5 +51,36 @@ public:
 private:
     DBClient client;
 };
+
+
+template <typename T, typename... Args>
+int Crypto::add (Args&&... args) {
+    auto request = T::add (std::forward<Args> (args)...);
+    return std::stoi (db_request (request));
+}
+
+
+template <typename T>
+std::vector<T> Crypto::get_parse (std::string const& request) {
+    return parse<T> (db_request (request));
+}
+
+
+template <typename T>
+T Crypto::get_one (std::string const& request) {
+    auto ts = get_parse<T> (request);
+
+    if (ts.size() != 1) throw std::invalid_argument (
+        std::format ("запрос {} должен вернуть одно значение", request)
+    );
+
+    return ts.front();
+}
+
+
+template <typename T>
+std::vector<T> Crypto::get_all() {
+    return get_parse<T> (T::get_all());
+}
 
 #endif
