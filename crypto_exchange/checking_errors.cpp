@@ -3,7 +3,22 @@
 using namespace std;
 
 
+void check_input (string const& str) {
+    auto it = find_if (str.begin(), str.end(), [] (char c) {
+        return c == '\n'
+            or c == '\''
+            or c == ',';
+    });
+
+    if (it != str.end()) throw invalid_argument (
+        format ("недопустимый символ: {}\n", *it)
+    );
+}
+
+
 int Crypto::user_verification (string const& key) {
+    check_input (key);
+
     auto user = get_one<User> (User::search_by_key (key));
     
     if (user.id == 0) throw runtime_error (
@@ -15,13 +30,12 @@ int Crypto::user_verification (string const& key) {
 
 
 void Crypto::check_repeat_username (string const& name) {
-    try {
-        get_one<User> (User::search_by_name (name));
+    check_input (name);
+    auto users = get_parse<User> (User::search_by_name (name));
 
-        throw invalid_argument (
-            format ("пользователь с именем {} уже существует\n", name)
-        );
-    } catch (...) {}
+    if (users.size() != 0) throw invalid_argument (
+        format ("пользователь с именем {} уже существует\n", name)
+    );
 }
 
 

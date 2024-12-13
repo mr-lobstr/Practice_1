@@ -1,10 +1,24 @@
 #include <iostream>
-#include <sstream>
-#include <chrono>
 #include <format>
 #include "crypto.h"
+#include "../database/utility/utility.h"
 using namespace std;
 using namespace chrono;
+using namespace nlohmann;
+
+
+void check_input (string const&);
+
+
+Crypto::Crypto (Configuration const& config, WRSemaphore& sema_)
+    : client (config.ip, config.port)
+    , sema (sema_)
+{
+    if (not is_init()) {
+        init (config.lots);
+    }
+}
+
 
 string Crypto::db_request (string const& request) {
     auto [success, responce] = client.send_request (request);
@@ -26,6 +40,7 @@ void Crypto::init (vector<string> const& lotsNames) {
     db_request (State::init (1000));
 
     for (auto& name : lotsNames) {
+        check_input (name);
         add<Lot> (name);
     }
 
@@ -40,7 +55,9 @@ void Crypto::init (vector<string> const& lotsNames) {
 
 
 string Crypto::post_user (string const& name) {
+    WriteLock lock (sema);
     check_repeat_username (name);
+
     auto key = User::key_gen();
     auto userId = add<User> (name, key);
     auto quantity = stod (db_request (State::get_default_quantity()));
@@ -71,26 +88,6 @@ void Crypto::change_balance (int userId, int lotId, double sum) {
 }
 
 
-string closed_time() {
-    using namespace chrono;
-
-    auto now = system_clock::now();
-    time_t t = system_clock::to_time_t(now);
-    
-    tm tm = *localtime(&t);
-    auto ms = duration_cast<milliseconds>(now.time_since_epoch()).count() % 1000;
-
-    stringstream ss;
-    ss << setfill('0') << setw(3) << ms << ":"
-       << setfill('0') << setw(2) << tm.tm_sec << ":"
-       << setfill('0') << setw(2) << tm.tm_min << ":"
-       << setfill('0') << setw(2) << tm.tm_hour
-       << put_time(localtime(&t), " %d-%m-%Y");
-
-    return ss.str();
-}
-
-
 int Crypto::create_order (Order const& order) {
     auto id = add<Order> (order);
 
@@ -114,6 +111,7 @@ int Crypto::closed_order (Order const& order) {
     return create_order (order);
 }
 
+
 Order order_separate (Order& order, double quantity) {
     auto newOrder = order;
     order.quantity -= quantity;
@@ -130,7 +128,7 @@ int Crypto::deal (Order& my_, Order& other_) {
     auto my = order_separate (my_, quantity);
     auto other = order_separate (other_, quantity);
 
-    my.closed = other.closed = closed_time();
+    my.closed = other.closed = current_time_str();
     other.price = my.price;
 
     closed_order (other);
@@ -145,10 +143,13 @@ int Crypto::deal (Order& my_, Order& other_) {
 
 
 int Crypto::post_order (string const& userKey, Order const& order) {
+    WriteLock lock (sema);
+
     auto my = order;
     my.userId = user_verification (userKey);
     my.closed = "no";
 
+    check_input (my.type);
     auto reversOrders = get_parse<Order> (Order::search_revers (my));
 
     for (auto& other : reversOrders) {
@@ -169,6 +170,8 @@ int Crypto::post_order (string const& userKey, Order const& order) {
 
 
 void Crypto::delete_order (string const& userKey, int orderId) {
+    WriteLock lock (sema);
+
     auto userId = user_verification (userKey);
     auto order = check_and_get_user_order (userId, orderId);
 
@@ -186,74 +189,27 @@ void Crypto::delete_order (Order const& order) {
 }
 
 
-Crypto::Balance Crypto::get_balance (string const& userKey) {
+Balance Crypto::get_balance (string const& userKey) {
+    ReadLock lock (sema);
+
     auto userId = user_verification (userKey);
     auto userLots = get_parse<UserLot> (UserLot::search_by_user_id (userId));
 
     Balance balance;
 
     for (auto& userLot : userLots) {
-        balance[userLot.lotId] = userLot.quantity;
+        balance.data[userLot.lotId] = userLot.quantity;
     }
 
     return balance;
 }
 
 
-Crypto::Crypto (string const& ip, size_t port, vector<string> lots)
-    : client (ip, port)
-{
-    if (not is_init()) {
-        init (lots);
-    }
-}
-
-
-#include <iostream>
-#include "db_client.cpp"
-#include "checking_errors.cpp"
-#include "crypto_elements/lot.cpp"
-#include "crypto_elements/pair.cpp"
-#include "crypto_elements/user.cpp"
-#include "crypto_elements/user_lot.cpp"
-#include "crypto_elements/order.cpp"
-#include "crypto_elements/split.cpp"
-
-int main()
-{
-    vector<string> lots {
-        "RUB",
-        "BTC",
-        "ETH",
-        "USDT",
-        "USDC"
-    };
-
-    try {
-        Crypto crypto("0.0.0.0", 7432, lots);
-
-        auto k1 = crypto.post_user ("Misha2");
-        auto k2 = crypto.post_user ("Sasha2");
-        cout << k1 << endl << k2 << endl;
-
-        Order m{
-            .pairId = 1,
-            .quantity = 300,
-            .price = 0.015,
-            .type = "buy",
-        };
-
-        Order s {
-            .pairId = 1,
-            .quantity = 200,
-            .price = 0.01,
-            .type = "sell",
-        };
-
-        crypto.post_order (k1, m);
-        crypto.post_order (k2, s);
-
-    } catch (exception const& e) {
-        cout << "Ooops..\n" << e.what() << endl;
+void to_json (json& j, Balance const& balance) {
+    for (auto& [lot_id, quantity] : balance.data) {
+        j.push_back ({
+            {"lot_id", lot_id},
+            {"quantity", quantity}
+        });
     }
 }

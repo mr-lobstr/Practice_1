@@ -2,6 +2,7 @@
 #define ORDER_H_GUARD
 
 #include <string>
+#include <nlohmann/json.hpp>
 
 struct Order {
     int id;
@@ -25,5 +26,7 @@ public:
 
     static Order from_str (std::string const&);
 };
+
+void to_json (nlohmann::json&, Order const&);
 
 #endif

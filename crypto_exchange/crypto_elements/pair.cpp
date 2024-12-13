@@ -2,6 +2,7 @@
 #include <vector>
 #include "pair.h"
 using namespace std;
+using namespace nlohmann;
 
 vector<string> split (string const&, char);
 
@@ -37,4 +38,11 @@ string Pair::get_all() {
 string Pair::search_by_id (int id) {
     return get_all()
          + format ("WHERE pair.pair_pk = '{}'", id);
+}
+
+
+void to_json (json& j, Pair const& pair) {
+    j["pair_id"] = pair.id;
+    j["first_lot_id"] = pair.firstLotId;
+    j["second_lot_id"] = pair.secondLotId;
 }

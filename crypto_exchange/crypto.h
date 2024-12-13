@@ -1,35 +1,45 @@
 #ifndef CRYPTO_H_GUARD
 #define CRYPTO_H_GUARD
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
-#include "db_client.h"
+#include "write_read_semaphore.h"
 #include "crypto_elements.h"
+#include "../database/client_server/client.h"
+
+
+class Configuration {
+    friend class Crypto;
+public:
+    explicit
+    Configuration (std::string const&);
+
+private:
+    std::string ip{};
+    std::size_t port{};
+    std::vector<std::string> lots{};
+};
 
 
 class Crypto {
 public:
-    using Balance = std::map<int, double>;
+    Crypto (Configuration const&, WRSemaphore&);
 
-public:
-    Crypto (std::string const&, std::size_t, std::vector<std::string>);
+    Balance get_balance (std::string const&);
+    template <typename T> auto get();
 
     std::string post_user (std::string const&);
     int post_order (std::string const&, Order const&);
     void delete_order (std::string const&, int);
 
-    Balance get_balance (std::string const&);
-
-public:
-    template <typename T> std::vector<T> get_all();
-
 private:
     std::string db_request (std::string const&);
-
+    
     template <typename T, typename... Args> int add (Args&&...);
-    template <typename T> std::vector<T> get_parse (std::string const&);
     template <typename T> T get_one (std::string const&);
+    template <typename T> std::vector<T> get_all();
+    template <typename T> std::vector<T> get_parse (std::string const&);
 
 private:
     bool is_init();
@@ -50,7 +60,18 @@ private:
 
 private:
     DBClient client;
+    WRSemaphore& sema;
 };
+
+
+void to_json (nlohmann::json&, Balance const&);
+
+
+template <typename T>
+auto Crypto::get() {
+    ReadLock lock (sema);
+    return get_all<T>();
+}
 
 
 template <typename T, typename... Args>

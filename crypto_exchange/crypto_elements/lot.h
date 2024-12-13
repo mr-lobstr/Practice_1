@@ -2,6 +2,7 @@
 #define LOT_H_GUARD
 
 #include <string>
+#include <nlohmann/json.hpp>
 
 struct Lot {
     int id;
@@ -13,5 +14,7 @@ public:
     static std::string search_by_id (int id);
     static Lot from_str (std::string const&);
 };
+
+void to_json (nlohmann::json&, Lot const&);
 
 #endif

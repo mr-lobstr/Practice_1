@@ -2,6 +2,7 @@
 #include <vector>
 #include "order.h"
 using namespace std;
+using namespace nlohmann;
 
 vector<string> split (string const&, char);
 
@@ -82,4 +83,15 @@ string Order::search_revers (Order const& order) {
             "WHERE order.type = '{}' AND order.closed = 'no'",
             reversType
         );
+}
+
+
+void to_json (json& j, Order const& order) {
+    j["order_id"] = order.id;
+    j["user_id"] = order.userId;
+    j["pair_id"] = order.pairId;
+    j["quantity"] = order.quantity;
+    j["type"] = order.type;
+    j["price"] = order.price;
+    j["closed"] = order.closed;
 }

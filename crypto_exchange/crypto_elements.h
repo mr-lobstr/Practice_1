@@ -1,6 +1,7 @@
 #ifndef CRYPTO_ELEMENTS_H_GUARD
 #define CRYPTO_ELEMENTS_H_GUARD
 
+#include <map>
 #include <vector>
 #include <string>
 
@@ -28,5 +29,10 @@ std::vector<T> parse (std::string const& str) {
     
     return arr;
 }
+
+
+struct Balance {
+    std::map<int, double> data;
+};
 
 #endif

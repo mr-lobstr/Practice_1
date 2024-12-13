@@ -1,0 +1,23 @@
+{
+    "post_user1" : {
+        "username" : "Misha"
+    },
+
+    "post_user2" : {
+        "username" : "Sasha"
+    },
+
+    "post_order1" : {
+        "pair_id": 1,
+        "quantity": 300,
+        "price": 0.015,
+        "type": "buy"
+    },
+
+    "post_order2" : {
+        "pair_id": 1,
+        "quantity": 200,
+        "price": 0.01,
+        "type": "sell"
+    }
+}

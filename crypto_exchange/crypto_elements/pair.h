@@ -2,6 +2,7 @@
 #define Pair_H_GUARD
 
 #include <string>
+#include <nlohmann/json.hpp>
 #include "lot.h"
 
 struct Pair {
@@ -15,5 +16,7 @@ public:
     static std::string search_by_id (int id);
     static Pair from_str (std::string const&);
 };
+
+void to_json (nlohmann::json&, Pair const&);
 
 #endif
