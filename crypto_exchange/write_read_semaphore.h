@@ -30,7 +30,10 @@ public:
     void finish_reading() {
         std::unique_lock<std::mutex> lock (mtx);
         --readerCnt;
-        cv.notify_one();
+        
+        if (readerCnt == 0) {
+            cv.notify_one();
+        }
     }
 
     void finish_writing() {

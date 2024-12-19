@@ -80,18 +80,21 @@ void CryptoServer::session (tcp::socket& socket, beast::error_code& ec) {
     beast::flat_buffer buffer;
     http::read (socket, buffer, request, ec); if (ec) return;
 
-    string body;
+    string body, contentType;
     http::status status;
     
     try {
         body = request_processing (socket, request).dump (4);
         status = http::status::ok;
+        contentType = "application/json";
     } catch (exception const& e) {
         body = format ("Ошибка при обработке запроса:\n{}", e.what());
         status = http::status::internal_server_error;
+        contentType = "text/plain";
     }
     
     Responce responce {status, request.version(), body};
+    responce.set(http::field::content_type, contentType);
     responce.prepare_payload();
     http::write (socket, responce);
 }

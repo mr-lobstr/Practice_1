@@ -1,5 +1,5 @@
 {
-    "name": "Склад",
+    "name": "Database",
     "tuples_limit": 100,
     "structure": {
         "state":[

@@ -41,5 +41,10 @@ Response DBClient::send_request (string const& request) {
         responce.pop_back();
     }
 
-    return {success, responce.substr (skip)};
+    try {
+        return {success, responce.substr (skip)};
+    } catch (exception const& e) {
+        return {false, e.what()};
+    }
+
 }

@@ -40,7 +40,7 @@ void Crypto::check_repeat_username (string const& name) {
 
 
 void Crypto::check_change_quantity (double sum, UserLot const& userLot) {
-    if (sum <= userLot.quantity)
+    if (sum > 0 or abs (sum) <= userLot.quantity)
         return;
 
     auto lot = get_one<Lot> (Lot::search_by_id (userLot.lotId));

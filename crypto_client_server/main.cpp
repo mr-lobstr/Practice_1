@@ -19,7 +19,7 @@ int main (int argc, char** argv)
 {
     register_args (argc, argv);
 
-    string pathConfig = get_arg_or (1, "./schema.json");
+    string pathConfig = get_arg_or (1, "../example/crypto_test/config.json");
     string ip = get_arg_or (2, "0.0.0.0");
     int port = stoi (get_arg_or (3, "8081"));
 

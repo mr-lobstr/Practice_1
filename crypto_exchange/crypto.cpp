@@ -153,7 +153,7 @@ int Crypto::post_order (string const& userKey, Order const& order) {
     auto reversOrders = get_parse<Order> (Order::search_revers (my));
 
     for (auto& other : reversOrders) {
-        if (my.id == other.id)
+        if (my.userId == other.userId)
             continue;
 
         if (is_profit (my, other)) {
@@ -190,7 +190,7 @@ void Crypto::delete_order (Order const& order) {
 
 
 Balance Crypto::get_balance (string const& userKey) {
-    ReadLock lock (sema);
+    WriteLock lock (sema);
 
     auto userId = user_verification (userKey);
     auto userLots = get_parse<UserLot> (UserLot::search_by_user_id (userId));

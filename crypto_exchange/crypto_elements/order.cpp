@@ -80,8 +80,8 @@ string Order::search_revers (Order const& order) {
 
     return get_all()
          + format (
-            "WHERE order.type = '{}' AND order.closed = 'no'",
-            reversType
+            "WHERE order.pair_id = '{}' AND order.type = '{}' AND order.closed = 'no'",
+            order.pairId, reversType
         );
 }
 

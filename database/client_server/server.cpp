@@ -101,7 +101,7 @@ void DBServer::wait_loop (fd_set& readfds, timeval& timeout) {
         thread ([&, this] {
             try {
                 request_processing (clientSock, database);
-            } catch (invalid_argument const& e) {
+            } catch (exception const& e) {
                 print_log ("error:\n"s + e.what());
             }
         }).detach();
@@ -122,7 +122,9 @@ DBServer::PGuard::PGuard (int sock, size_t& cnt, std::mutex& mtx_)
 DBServer::PGuard::~PGuard() noexcept {
     lock_guard<mutex> lock (mtx);
     --clientsCnt;
-    close(clientSock);
+    try {
+        close(clientSock);
+    } catch (...) {}
 }
 
 

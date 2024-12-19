@@ -69,7 +69,7 @@ void to_json (nlohmann::json&, Balance const&);
 
 template <typename T>
 auto Crypto::get() {
-    ReadLock lock (sema);
+    WriteLock lock (sema);
     return get_all<T>();
 }
 
