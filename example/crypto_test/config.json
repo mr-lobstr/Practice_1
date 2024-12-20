@@ -6,6 +6,6 @@
         "USDT",
         "USDC"
     ],
-    "database_ip": "127.0.0.1",
-    "database_port": 8080
+    "database_ip": "0.0.0.0",
+    "database_port": 9000
 }

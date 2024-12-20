@@ -5,7 +5,7 @@ from bot import Bot
 
 
 def post_random_order(bot):
-    pair = random.choice(bot.pairs)
+    pair = random.choice(bot.get_pairs())
     tp = random.choice(["buy", "sell"])
 
     pair_id = pair['pair_id']
@@ -42,7 +42,7 @@ def main_loop(bot):
         try:
             post_random_order(bot)
         except Exception as e:
-            pass
+            print(e)
 
 
 def main():
